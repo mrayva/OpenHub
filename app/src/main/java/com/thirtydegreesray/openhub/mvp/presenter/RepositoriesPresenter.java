@@ -552,6 +552,12 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         repo.setName(repoName);
         User user = new User();
         user.setLogin(owner);
+        // The trending page (scraped HTML) has no single per-repo owner avatar -
+        // GitHub's own trending UI only shows small "built by" contributor faces.
+        // github.com/<login>.png is GitHub's stable convention for a user/org's
+        // avatar without needing an API call, so use that instead of leaving it
+        // blank (which is why trending rows showed no icon at all).
+        user.setAvatarUrl("https://github.com/" + owner + ".png");
         repo.setOwner(user);
 
         repo.setDescription(desc.toString().trim()
