@@ -94,6 +94,25 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
         return fragment;
     }
 
+    /**
+     * Same as createForSearch, but tags the fragment's arguments with a
+     * TrendingSince value purely so the hosting pager Activity (CreatedActivity)
+     * can identify which tab a re-attached fragment instance belongs to after
+     * process/config restoration - mirrors createForTrending's "since" tag.
+     */
+    public static RepositoriesFragment createForSearch(@NonNull SearchModel searchModel,
+                                                        @NonNull TrendingSince since){
+        RepositoriesFragment fragment = new RepositoriesFragment();
+        fragment.setArguments(
+                BundleHelper.builder()
+                        .put("type", RepositoriesType.SEARCH)
+                        .put("searchModel", searchModel)
+                        .put("since", since)
+                        .build()
+        );
+        return fragment;
+    }
+
     public static RepositoriesFragment createForTrending(@NonNull TrendingSince since){
         RepositoriesFragment fragment = new RepositoriesFragment();
         fragment.setArguments(

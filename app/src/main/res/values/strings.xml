@@ -184,6 +184,7 @@
     <string name="daily">Daily</string>
     <string name="weekly">Weekly</string>
     <string name="monthly">Monthly</string>
+    <string name="yearly">Yearly</string>
 
     <string name="logout_warning">Confirm to logout?</string>
     <string name="unknown">Unknown</string>

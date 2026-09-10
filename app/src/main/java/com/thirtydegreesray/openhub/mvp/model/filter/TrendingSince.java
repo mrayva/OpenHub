@@ -5,5 +5,8 @@ package com.thirtydegreesray.openhub.mvp.model.filter;
  */
 
 public enum TrendingSince {
-    Daily, Weekly, Monthly
+    Daily, Weekly, Monthly,
+    // Not used by real (scraped) trending - GitHub's trending page has no yearly
+    // timeframe - only by CreatedActivity's search-API-based "created in last N" tabs.
+    Yearly
 }

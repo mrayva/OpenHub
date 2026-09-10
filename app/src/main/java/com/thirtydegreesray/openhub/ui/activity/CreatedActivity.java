@@ -17,6 +17,7 @@ import com.thirtydegreesray.openhub.inject.module.ActivityModule;
 import com.thirtydegreesray.openhub.mvp.contract.ITrendingContract;
 import com.thirtydegreesray.openhub.mvp.model.SearchModel;
 import com.thirtydegreesray.openhub.mvp.model.TrendingLanguage;
+import com.thirtydegreesray.openhub.mvp.model.filter.TrendingSince;
 import com.thirtydegreesray.openhub.mvp.presenter.TrendingPresenter;
 import com.thirtydegreesray.openhub.ui.activity.base.PagerActivity;
 import com.thirtydegreesray.openhub.ui.adapter.base.FragmentPagerModel;
@@ -27,16 +28,17 @@ import java.util.Calendar;
 import java.util.Locale;
 
 /**
- * Repos created in the last year, sorted by stars, with an optional language
- * filter. GitHub's own trending page has no yearly timeframe (only
- * daily/weekly/monthly), so this uses the real search API instead of
- * scraping: a "created:>{oneYearAgo}" query, same mechanism the Topic repo
- * lists already use.
+ * Repos created in the last day/week/month/year, sorted by stars, with an
+ * optional language filter. GitHub's own trending page has no such
+ * "created in the last N" timeframes (only daily/weekly/monthly *trending*),
+ * so this uses the real search API instead of scraping: a
+ * "created:>{dateOffset}" query, same mechanism the Topic repo lists already
+ * use.
  *
  * Reuses TrendingActivity's language-filter drawer wholesale (same end-drawer
- * layout/menu, same TrendingPresenter for the language list, same
- * RepositoriesFragment.LanguageUpdateListener hookup) since that UI is
- * generic and not actually trending-specific.
+ * layout/menu, same TrendingPresenter for the language list, same tab
+ * structure/pager pattern) since that UI is generic and not actually
+ * trending-specific.
  */
 public class CreatedActivity extends PagerActivity<TrendingPresenter>
         implements ITrendingContract.View {
@@ -48,22 +50,60 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
 
     private final int SORT_LANGUAGE_REQUEST_CODE = 100;
     private TrendingLanguage selectedLanguage;
-    private SearchModel searchModel;
+    private SearchModel dailySearchModel;
+    private SearchModel weeklySearchModel;
+    private SearchModel monthlySearchModel;
+    private SearchModel yearlySearchModel;
 
     @Override
     protected void initActivity() {
         super.initActivity();
         setEndDrawerEnable(true);
-        searchModel = new SearchModel(SearchModel.SearchType.Repository, buildBaseQuery())
+        dailySearchModel = newSearchModel(TrendingSince.Daily);
+        weeklySearchModel = newSearchModel(TrendingSince.Weekly);
+        monthlySearchModel = newSearchModel(TrendingSince.Monthly);
+        yearlySearchModel = newSearchModel(TrendingSince.Yearly);
+    }
+
+    private SearchModel newSearchModel(TrendingSince since) {
+        return new SearchModel(SearchModel.SearchType.Repository, buildBaseQuery(since))
                 .setSort("stars")
                 .setDesc(true);
     }
 
-    private String buildBaseQuery() {
+    private String buildBaseQuery(TrendingSince since) {
         Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.YEAR, -1);
-        String oneYearAgo = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(calendar.getTime());
-        return "created:>" + oneYearAgo;
+        switch (since) {
+            case Daily:
+                calendar.add(Calendar.DAY_OF_YEAR, -1);
+                break;
+            case Weekly:
+                calendar.add(Calendar.WEEK_OF_YEAR, -1);
+                break;
+            case Monthly:
+                calendar.add(Calendar.MONTH, -1);
+                break;
+            case Yearly:
+            default:
+                calendar.add(Calendar.YEAR, -1);
+                break;
+        }
+        String date = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(calendar.getTime());
+        return "created:>" + date;
+    }
+
+    private SearchModel getSearchModel(TrendingSince since) {
+        switch (since) {
+            case Daily:
+                return dailySearchModel;
+            case Weekly:
+                return weeklySearchModel;
+            case Monthly:
+                return monthlySearchModel;
+            case Yearly:
+            default:
+                return yearlySearchModel;
+        }
     }
 
     @Override
@@ -85,11 +125,19 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
     protected void initView(Bundle savedInstanceState) {
         super.initView(savedInstanceState);
 
+        com.google.android.material.appbar.AppBarLayout appBarLayout = findViewById(R.id.app_bar);
+        androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams params =
+                (androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams();
+        params.setMargins(params.leftMargin, 0, params.rightMargin, params.bottomMargin);
+        appBarLayout.setLayoutParams(params);
+
         setToolbarScrollAble(true);
         setToolbarBackEnable();
         pagerAdapter.setPagerList(FragmentPagerModel.createCreatedPagerList(
-                getActivity(), getFragments(), searchModel));
-        tabLayout.setVisibility(View.GONE);
+                getActivity(), getFragments(), dailySearchModel, weeklySearchModel,
+                monthlySearchModel, yearlySearchModel));
+        tabLayout.setVisibility(View.VISIBLE);
+        tabLayout.setupWithViewPager(viewPager);
         viewPager.setAdapter(pagerAdapter);
         showFirstPager();
         initLanguagesDrawer();
@@ -102,12 +150,32 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
 
     @Override
     public int getPagerSize() {
-        return 1;
+        return 4;
     }
 
     @Override
     protected int getFragmentPosition(Fragment fragment) {
-        return fragment instanceof RepositoriesFragment ? 0 : -1;
+        if (fragment instanceof RepositoriesFragment) {
+            TrendingSince since = null;
+            Object obj = fragment.getArguments().get("since");
+            if (obj instanceof TrendingSince)
+                since = (TrendingSince) obj;
+
+            if (since == null) {
+                return -1;
+            } else if (since.equals(TrendingSince.Daily)) {
+                return 0;
+            } else if (since.equals(TrendingSince.Weekly)) {
+                return 1;
+            } else if (since.equals(TrendingSince.Monthly)) {
+                return 2;
+            } else if (since.equals(TrendingSince.Yearly)) {
+                return 3;
+            } else {
+                return -1;
+            }
+        } else
+            return -1;
     }
 
     @Override
@@ -173,14 +241,21 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
 
     private void notifyLanguageUpdate() {
         String slug = selectedLanguage.getSlug();
-        String query = buildBaseQuery();
-        if (slug != null && !slug.isEmpty() && !"unknown".equals(slug)) {
-            query += " language:" + slug;
-        }
-        searchModel.setQuery(query);
+        boolean hasLanguage = slug != null && !slug.isEmpty() && !"unknown".equals(slug);
         for (FragmentPagerModel fragmentPagerModel : pagerAdapter.getPagerList()) {
             Fragment fragment = fragmentPagerModel.getFragment();
             if (fragment instanceof RepositoriesFragment) {
+                TrendingSince since = null;
+                Object obj = fragment.getArguments().get("since");
+                if (obj instanceof TrendingSince) since = (TrendingSince) obj;
+                if (since == null) continue;
+
+                SearchModel searchModel = getSearchModel(since);
+                String query = buildBaseQuery(since);
+                if (hasLanguage) {
+                    query += " language:" + slug;
+                }
+                searchModel.setQuery(query);
                 ((RepositoriesFragment) fragment).onSearchModelUpdate(searchModel);
             }
         }

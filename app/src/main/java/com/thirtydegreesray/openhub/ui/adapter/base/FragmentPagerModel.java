@@ -109,10 +109,17 @@ public class FragmentPagerModel {
 
     public static List<FragmentPagerModel> createCreatedPagerList(
             @NonNull Context context, @NonNull ArrayList<Fragment> fragments,
-            @NonNull SearchModel searchModel) {
+            @NonNull SearchModel dailySearchModel, @NonNull SearchModel weeklySearchModel,
+            @NonNull SearchModel monthlySearchModel, @NonNull SearchModel yearlySearchModel) {
         return setPagerFragmentFlag(Arrays.asList(
-                new FragmentPagerModel(context.getString(R.string.recently_created),
-                        getFragment(fragments, 0, () -> RepositoriesFragment.createForSearch(searchModel)))
+                new FragmentPagerModel(context.getString(R.string.daily),
+                        getFragment(fragments, 0, () -> RepositoriesFragment.createForSearch(dailySearchModel, TrendingSince.Daily))),
+                new FragmentPagerModel(context.getString(R.string.weekly),
+                        getFragment(fragments, 1, () -> RepositoriesFragment.createForSearch(weeklySearchModel, TrendingSince.Weekly))),
+                new FragmentPagerModel(context.getString(R.string.monthly),
+                        getFragment(fragments, 2, () -> RepositoriesFragment.createForSearch(monthlySearchModel, TrendingSince.Monthly))),
+                new FragmentPagerModel(context.getString(R.string.yearly),
+                        getFragment(fragments, 3, () -> RepositoriesFragment.createForSearch(yearlySearchModel, TrendingSince.Yearly)))
         ));
     }
 
