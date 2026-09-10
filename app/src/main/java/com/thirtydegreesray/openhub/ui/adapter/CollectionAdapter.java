@@ -1,16 +1,23 @@
 package com.thirtydegreesray.openhub.ui.adapter;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import androidx.annotation.NonNull;
+import androidx.appcompat.widget.AppCompatImageView;
 import android.view.View;
 import android.widget.TextView;
 
 import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.R2;
+import com.thirtydegreesray.openhub.common.GlideApp;
 import com.thirtydegreesray.openhub.mvp.model.Collection;
 import com.thirtydegreesray.openhub.ui.adapter.base.BaseAdapter;
 import com.thirtydegreesray.openhub.ui.adapter.base.BaseViewHolder;
 import com.thirtydegreesray.openhub.ui.fragment.base.BaseFragment;
+import com.thirtydegreesray.openhub.util.PrefUtils;
+import com.thirtydegreesray.openhub.util.StringUtils;
+import com.thirtydegreesray.openhub.util.ViewUtils;
+import com.thirtydegreesray.openhub.util.WindowUtil;
 
 import javax.inject.Inject;
 
@@ -43,9 +50,27 @@ public class CollectionAdapter extends BaseAdapter<CollectionAdapter.ViewHolder,
         Collection model = data.get(position);
         holder.name.setText(model.getName());
         holder.desc.setText(model.getDesc());
+
+        if(StringUtils.isBlank(model.getImage())){
+            int padding = WindowUtil.dipToPx(context, 16);
+            holder.image.setPadding(padding, padding, padding, padding);
+            holder.image.setBackgroundColor(ViewUtils.getWindowBackground(context));
+            holder.image.setImageTintList(ColorStateList.valueOf(ViewUtils.getSecondaryTextColor(context)));
+            holder.image.setImageResource(R.drawable.ic_collection);
+        } else {
+            holder.image.setPadding(0, 0, 0, 0);
+            int transparentColor = context.getResources().getColor(R.color.transparent);
+            holder.image.setBackgroundColor(transparentColor);
+            holder.image.setImageTintList(null);
+            GlideApp.with(fragment)
+                    .load(model.getImage())
+                    .onlyRetrieveFromCache(!PrefUtils.isLoadImageEnable())
+                    .into(holder.image);
+        }
     }
 
     class ViewHolder extends BaseViewHolder {
+        @BindView(R2.id.image) AppCompatImageView image;
         @BindView(R2.id.name) TextView name;
         @BindView(R2.id.desc) TextView desc;
         public ViewHolder(@NonNull View itemView) {

@@ -108,17 +108,19 @@ public class CollectionsPresenter extends BasePresenter<ICollectionsContract.Vie
                 "col-12 col-sm-6 col-md-4 tmp-mb-4");
         for (Element element : elements) {
             Element hrefElement = element.select("a").first();
+            Element imageElement = element.select("a > img").first();
             Element titleElement = element.select("a > p").first();
             Element descElement = element.select("a > p").last();
             String id = hrefElement.attr("href");
             id = id.substring(id.lastIndexOf("/") + 1);
             String title = titleElement.textNodes().get(0).toString();
             String desc = descElement.textNodes().get(0).toString();
+            String image = imageElement == null ? null : imageElement.attr("src");
 
 //            List<TextNode> descTextNodes = descElement.textNodes();
 //            int descIndex = descTextNodes.size() == 0 ? 0 : descTextNodes.size() - 1;
 //            String desc = descTextNodes.get(descIndex).toString().trim();
-            Collection collection = new Collection(id, title, desc);
+            Collection collection = new Collection(id, title, desc).setImage(image);
             collections.add(collection);
         }
         return collections;

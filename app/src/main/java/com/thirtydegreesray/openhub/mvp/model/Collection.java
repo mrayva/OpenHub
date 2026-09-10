@@ -12,11 +12,21 @@ public class Collection implements Parcelable {
     private String id;
     private String name;
     private String desc;
+    private String image;
 
     public Collection(String id, String name, String desc) {
         this.id = id;
         this.name = name;
         this.desc = desc;
+    }
+
+    public String getImage() {
+        return image;
+    }
+
+    public Collection setImage(String image) {
+        this.image = image;
+        return this;
     }
 
     public String getId() {
@@ -53,12 +63,14 @@ public class Collection implements Parcelable {
         dest.writeString(this.id);
         dest.writeString(this.name);
         dest.writeString(this.desc);
+        dest.writeString(this.image);
     }
 
     protected Collection(Parcel in) {
         this.id = in.readString();
         this.name = in.readString();
         this.desc = in.readString();
+        this.image = in.readString();
     }
 
     public static final Parcelable.Creator<Collection> CREATOR = new Parcelable.Creator<Collection>() {
