@@ -92,6 +92,22 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
         return "created:>" + date;
     }
 
+    /**
+     * SearchService's "q" param is sent with @Query(encoded = true), so it is
+     * never percent-encoded by Retrofit/OkHttp. Language slugs like "c++" or
+     * "c#" contain characters (+, #) that are legal-but-meaningful in a URL
+     * query component - a literal "+" is read back by GitHub as a space - so
+     * they must be percent-encoded by hand before being appended, otherwise
+     * "language:c++" silently becomes "language:c".
+     */
+    private String encodeLanguageSlug(String slug) {
+        try {
+            return java.net.URLEncoder.encode(slug, "UTF-8");
+        } catch (java.io.UnsupportedEncodingException e) {
+            return slug;
+        }
+    }
+
     private SearchModel getSearchModel(TrendingSince since) {
         switch (since) {
             case Daily:
@@ -241,7 +257,8 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
 
     private void notifyLanguageUpdate() {
         String slug = selectedLanguage.getSlug();
-        boolean hasLanguage = slug != null && !slug.isEmpty() && !"unknown".equals(slug);
+        boolean hasLanguage = slug != null && !slug.isEmpty()
+                && !"unknown".equals(slug) && !"all".equals(slug);
         for (FragmentPagerModel fragmentPagerModel : pagerAdapter.getPagerList()) {
             Fragment fragment = fragmentPagerModel.getFragment();
             if (fragment instanceof RepositoriesFragment) {
@@ -253,7 +270,7 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
                 SearchModel searchModel = getSearchModel(since);
                 String query = buildBaseQuery(since);
                 if (hasLanguage) {
-                    query += " language:" + slug;
+                    query += " language:" + encodeLanguageSlug(slug);
                 }
                 searchModel.setQuery(query);
                 ((RepositoriesFragment) fragment).onSearchModelUpdate(searchModel);
