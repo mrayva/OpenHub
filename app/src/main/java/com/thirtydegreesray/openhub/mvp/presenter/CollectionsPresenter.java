@@ -105,7 +105,7 @@ public class CollectionsPresenter extends BasePresenter<ICollectionsContract.Vie
     private ArrayList<Collection> getTopCollections(Document doc){
         ArrayList<Collection> collections = new ArrayList<>();
         Elements elements = doc.getElementsByClass(
-                "col-12 col-sm-6 col-md-4 mb-4");
+                "col-12 col-sm-6 col-md-4 tmp-mb-4");
         for (Element element : elements) {
             Element hrefElement = element.select("a").first();
             Element titleElement = element.select("a > p").first();
@@ -127,7 +127,7 @@ public class CollectionsPresenter extends BasePresenter<ICollectionsContract.Vie
     private ArrayList<Collection> getBellowCollections(Document doc){
         ArrayList<Collection> collections = new ArrayList<>();
         Elements elements = doc.getElementsByClass(
-                "d-flex border-bottom border-gray-light pb-4 mb-5");
+                "d-flex border-bottom color-border-muted tmp-pb-4 tmp-mb-5");
         for (Element element : elements) {
             Element titleElement = element.select("div > h2 > a").first();
             Element descElement = element.select("div").last();

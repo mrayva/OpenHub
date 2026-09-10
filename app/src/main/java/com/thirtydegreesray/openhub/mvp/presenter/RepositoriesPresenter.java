@@ -504,7 +504,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         String owner = fullName.substring(0, fullName.lastIndexOf("/"));
         String repoName = fullName.substring(fullName.lastIndexOf("/") + 1);
 
-        Element descElement = element.getElementsByClass("col-9 color-fg-muted my-1 pr-4").first();
+        Element descElement = element.getElementsByClass("col-9 color-fg-muted my-1 tmp-pr-4").first();
         Element numElement = element.getElementsByClass("f6 color-fg-muted mt-2").first();
         StringBuilder desc = new StringBuilder();
         String language = "unknown";
@@ -525,7 +525,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     language = numElement.select("span > span").get(1).textNodes().get(0).toString().trim();
                 }
 
-                for (Element e : numElement.getElementsByClass("Link Link--muted d-inline-block mr-3")) {
+                for (Element e : numElement.select("a.Link--muted.d-inline-block")) {
                     if (e.attr("href").endsWith("stargazers")) {
                         starNumStr = e.textNodes().get(0).toString()
                                 .replaceAll(" ", "").replaceAll(",", "");
