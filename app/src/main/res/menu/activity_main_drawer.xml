@@ -82,6 +82,11 @@
             android:icon="@drawable/ic_menu_trending"
             android:title="@string/trending_repos"/>
         <item
+            android:id="@+id/nav_created"
+            android:checkable="false"
+            android:icon="@drawable/ic_add"
+            android:title="@string/created"/>
+        <item
             android:id="@+id/nav_collections"
             android:icon="@drawable/ic_collections"
             android:title="@string/repo_collections"/>

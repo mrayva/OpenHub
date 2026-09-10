@@ -107,6 +107,15 @@ public class FragmentPagerModel {
         ));
     }
 
+    public static List<FragmentPagerModel> createCreatedPagerList(
+            @NonNull Context context, @NonNull ArrayList<Fragment> fragments,
+            @NonNull SearchModel searchModel) {
+        return setPagerFragmentFlag(Arrays.asList(
+                new FragmentPagerModel(context.getString(R.string.recently_created),
+                        getFragment(fragments, 0, () -> RepositoriesFragment.createForSearch(searchModel)))
+        ));
+    }
+
     public static List<FragmentPagerModel> createRepoIssuesPagerList(@NonNull Context context
             , @NonNull final String userId, @NonNull final String repoName, @NonNull ArrayList<Fragment> fragments) {
         return setPagerFragmentFlag(Arrays.asList(

@@ -324,6 +324,10 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         this.language = language;
     }
 
+    public void setSearchModel(SearchModel searchModel) {
+        this.searchModel = searchModel;
+    }
+
     private void loadCollection(boolean isReload){
         mView.showLoading();
         HttpObserver<ResponseBody> httpObserver = new HttpObserver<ResponseBody>() {

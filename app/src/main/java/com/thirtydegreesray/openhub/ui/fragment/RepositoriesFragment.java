@@ -222,4 +222,19 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
         }
     }
 
+    /**
+     * For SEARCH-type fragments (e.g. CreatedActivity) where a filter change
+     * (like language) needs to be baked into the query itself, rather than
+     * applied by the presenter the way TRENDING's scraped fetch does.
+     */
+    public void onSearchModelUpdate(SearchModel searchModel) {
+        if(mPresenter != null){
+            mPresenter.setSearchModel(searchModel);
+            mPresenter.setLoaded(false);
+            mPresenter.prepareLoadData();
+        } else {
+            getArguments().putParcelable("searchModel", searchModel);
+        }
+    }
+
 }
