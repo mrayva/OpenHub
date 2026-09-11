@@ -77,6 +77,9 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
     @AutoAccess Collection collection;
     @AutoAccess Topic topic;
 
+    @AutoAccess ArrayList<String> topicSlugs;
+    @AutoAccess String sort;
+
     @Inject
     public RepositoriesPresenter(DaoSession daoSession) {
         super(daoSession);
@@ -117,6 +120,10 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             loadTrending(false);
             return;
         }
+        if(RepositoriesFragment.RepositoriesType.TOPICS_SEARCH.equals(type)){
+            searchMultiTopics();
+            return;
+        }
         loadRepositories(false, 1);
     }
 
@@ -146,6 +153,10 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         }
         if(RepositoriesFragment.RepositoriesType.TRENDING.equals(type)){
             loadTrending(isReLoad);
+            return;
+        }
+        if(RepositoriesFragment.RepositoriesType.TOPICS_SEARCH.equals(type)){
+            searchMultiTopics();
             return;
         }
         mView.showLoading();
@@ -326,6 +337,85 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
 
     public void setSearchModel(SearchModel searchModel) {
         this.searchModel = searchModel;
+    }
+
+    public void setTopicsSearchParams(ArrayList<String> topicSlugs, String sort) {
+        this.topicSlugs = topicSlugs;
+        this.sort = sort;
+    }
+
+    /**
+     * GitHub's search API rejects OR between qualifiers ("logical operators
+     * only apply to text, not to qualifiers" - confirmed against the live
+     * API), so there is no single query for "repos matching any of these
+     * topics". Instead this fires one topic:<slug> search per selected topic
+     * in parallel, merges the results (de-duped by repo id), and re-sorts the
+     * merged pool by the chosen field - each source list already comes back
+     * sorted from GitHub, but interleaving several sorted lists isn't sorted
+     * as a whole. Load-more is intentionally not supported (mirrors how the
+     * COLLECTION type also disables it): true infinite scroll would need
+     * independently tracking a page cursor per topic, which isn't worth the
+     * complexity for what is already a "combine the top results of a few
+     * topics" feature.
+     */
+    private void searchMultiTopics() {
+        mView.showLoading();
+        if (StringUtils.isBlankList(topicSlugs)) {
+            repos = new ArrayList<>();
+            mView.hideLoading();
+            mView.showRepositories(repos);
+            mView.setCanLoadMore(false);
+            return;
+        }
+        final String sortField = StringUtils.isBlank(sort) ? "stars" : sort;
+
+        List<Observable<ArrayList<Repository>>> sources = new ArrayList<>();
+        for (final String slug : topicSlugs) {
+            sources.add(getSearchService().searchRepos("topic:" + slug, sortField, "desc", 1)
+                    .map(response -> {
+                        ArrayList<Repository> list = new ArrayList<>();
+                        if (response.isSuccessful() && response.body() != null) {
+                            list.addAll(response.body().getItems());
+                        }
+                        return list;
+                    })
+                    .onErrorReturn(throwable -> new ArrayList<>()));
+        }
+
+        Observable.zip(sources, results -> {
+            java.util.LinkedHashMap<Integer, Repository> merged = new java.util.LinkedHashMap<>();
+            for (Object result : results) {
+                //noinspection unchecked
+                ArrayList<Repository> list = (ArrayList<Repository>) result;
+                for (Repository repository : list) {
+                    merged.put(repository.getId(), repository);
+                }
+            }
+            ArrayList<Repository> combined = new ArrayList<>(merged.values());
+            java.util.Collections.sort(combined, (a, b) -> {
+                if ("updated".equals(sortField)) {
+                    java.util.Date dateA = a.getUpdatedAt();
+                    java.util.Date dateB = b.getUpdatedAt();
+                    if (dateA == null || dateB == null) return 0;
+                    return dateB.compareTo(dateA);
+                }
+                return Integer.compare(b.getStargazersCount(), a.getStargazersCount());
+            });
+            return combined;
+        })
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(combined -> {
+            if (mView == null) return;
+            repos = combined;
+            mView.hideLoading();
+            mView.showRepositories(repos);
+            mView.setCanLoadMore(false);
+        }, error -> {
+            if (mView == null) return;
+            mView.hideLoading();
+            mView.showLoadError(getErrorTip(error));
+        });
     }
 
     private void loadCollection(boolean isReload){

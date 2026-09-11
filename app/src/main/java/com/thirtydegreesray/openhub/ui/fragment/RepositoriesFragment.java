@@ -44,7 +44,7 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
         TrendingActivity.LanguageUpdateListener{
 
     public enum RepositoriesType{
-        OWNED, PUBLIC, STARRED, TRENDING, SEARCH, FORKS, TRACE, BOOKMARK, COLLECTION, TOPIC
+        OWNED, PUBLIC, STARRED, TRENDING, SEARCH, FORKS, TRACE, BOOKMARK, COLLECTION, TOPIC, TOPICS_SEARCH
     }
 
     public static RepositoriesFragment create(@NonNull RepositoriesType type,
@@ -119,6 +119,27 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
                 BundleHelper.builder()
                         .put("type", RepositoriesType.TRENDING)
                         .put("since", since)
+                        .build()
+        );
+        return fragment;
+    }
+
+    /**
+     * Repos matching ANY of the given topics ("OR", not GitHub search's native
+     * topic:a topic:b AND), sorted by stars or last-updated. GitHub's search
+     * API rejects boolean OR between qualifiers ("logical operators only apply
+     * to text, not to qualifiers" - verified against the live API), so
+     * RepositoriesPresenter fires one topic: query per topic and merges/re-sorts
+     * the results client-side instead of a single OR query.
+     */
+    public static RepositoriesFragment createForTopicsSearch(@NonNull ArrayList<String> topicSlugs,
+                                                               @NonNull String sort){
+        RepositoriesFragment fragment = new RepositoriesFragment();
+        fragment.setArguments(
+                BundleHelper.builder()
+                        .put("type", RepositoriesType.TOPICS_SEARCH)
+                        .putStringList("topicSlugs", topicSlugs)
+                        .put("sort", sort)
                         .build()
         );
         return fragment;
@@ -253,6 +274,21 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
             mPresenter.prepareLoadData();
         } else {
             getArguments().putParcelable("searchModel", searchModel);
+        }
+    }
+
+    /**
+     * For the TOPICS_SEARCH type (MyTopicsActivity), pushed when the user's
+     * selected topics or sort field change - mirrors onSearchModelUpdate.
+     */
+    public void onTopicsSearchUpdate(ArrayList<String> topicSlugs, String sort) {
+        if(mPresenter != null){
+            mPresenter.setTopicsSearchParams(topicSlugs, sort);
+            mPresenter.setLoaded(false);
+            mPresenter.prepareLoadData();
+        } else {
+            getArguments().putStringArrayList("topicSlugs", topicSlugs);
+            getArguments().putString("sort", sort);
         }
     }
 

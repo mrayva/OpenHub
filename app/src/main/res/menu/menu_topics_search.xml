@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/action_manage_topics"
+        android:title="@string/manage_topics"
+        app:showAsAction="ifRoom"/>
+
+    <group android:id="@+id/group_topics_sort" android:checkableBehavior="single">
+        <item
+            android:id="@+id/action_sort_stars"
+            android:title="@string/sort_by_stars"/>
+        <item
+            android:id="@+id/action_sort_updated"
+            android:title="@string/sort_by_updated"/>
+    </group>
+
+</menu>

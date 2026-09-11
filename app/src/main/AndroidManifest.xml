@@ -98,6 +98,8 @@
         <activity android:name=".ui.activity.SearchActivity" android:label="@string/search"/>
         <activity android:name=".ui.activity.TrendingActivity" android:label="@string/trending"/>
         <activity android:name=".ui.activity.CreatedActivity" android:label="@string/created"/>
+        <activity android:name=".ui.activity.MyTopicsActivity" android:label="@string/my_topics"/>
+        <activity android:name=".ui.activity.TopicsEditorActivity" android:label="@string/my_topics"/>
         <activity android:name=".ui.activity.AboutActivity" android:label="@string/about"/>
         <activity android:name=".ui.activity.ReleasesActivity" android:label="@string/releases"/>
         <activity android:name=".ui.activity.ViewerActivity"/>

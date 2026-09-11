@@ -95,6 +95,11 @@
             android:icon="@drawable/ic_topic"
             android:title="@string/topics"/>
         <item
+            android:id="@+id/nav_my_topics"
+            android:checkable="false"
+            android:icon="@drawable/ic_topic"
+            android:title="@string/my_topics"/>
+        <item
             android:id="@+id/nav_public_news"
             android:icon="@drawable/ic_global"
             android:title="@string/public_news"/>

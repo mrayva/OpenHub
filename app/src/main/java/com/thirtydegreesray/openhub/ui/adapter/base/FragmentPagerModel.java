@@ -107,6 +107,15 @@ public class FragmentPagerModel {
         ));
     }
 
+    public static List<FragmentPagerModel> createTopicsSearchPagerList(
+            @NonNull Context context, @NonNull ArrayList<Fragment> fragments,
+            @NonNull ArrayList<String> topicSlugs, @NonNull String sort) {
+        return setPagerFragmentFlag(Arrays.asList(
+                new FragmentPagerModel(context.getString(R.string.my_topics),
+                        getFragment(fragments, 0, () -> RepositoriesFragment.createForTopicsSearch(topicSlugs, sort)))
+        ));
+    }
+
     public static List<FragmentPagerModel> createCreatedPagerList(
             @NonNull Context context, @NonNull ArrayList<Fragment> fragments,
             @NonNull SearchModel dailySearchModel, @NonNull SearchModel weeklySearchModel,

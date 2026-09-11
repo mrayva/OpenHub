@@ -429,6 +429,19 @@
     <string name="topics_tip">Browse the top used topics on GitHub.</string>
     <string name="no_topics">No topics</string>
 
+    <string name="my_topics">My topics</string>
+    <string name="topics_selected_count">%d topics selected</string>
+    <string name="manage_topics">Manage topics</string>
+    <string name="no_topics_added">No topics added yet. Tap + to add one.</string>
+    <string name="no_topics_selected">Select or add a topic to see repositories.</string>
+    <string name="topic_removed">Topic %s removed</string>
+    <string name="add_topic">Add topic</string>
+    <string name="add_topic_hint">e.g. machine-learning</string>
+    <string name="topic_already_added">That topic is already in your list</string>
+    <string name="sort_by_stars">Most stars</string>
+    <string name="sort_by_updated">Recently updated</string>
+    <string name="topics_editor_tip">Tap a topic to include/exclude it from results, swipe to delete, or tap + to add a new one.</string>
+
     <string name="star_num_today">%s star today</string>
     <string name="star_num_this_week">%s star this week</string>
     <string name="star_num_this_month">%s star this month</string>

@@ -48,6 +48,8 @@ public class DBOpenHelper extends DaoMaster.DevOpenHelper {
             BookMarkRepoDao.dropTable(db, true);
         } else if(oldVersion == 4 && newVersion == 5){
             MyTrendingLanguageDao.createTable(db, true);
+        } else if(oldVersion == 5 && newVersion == 6){
+            MyTopicDao.createTable(db, true);
         } else {
             super.onUpgrade(db, oldVersion, newVersion);
         }

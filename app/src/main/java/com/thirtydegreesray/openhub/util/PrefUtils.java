@@ -72,6 +72,8 @@ public class PrefUtils {
     public final static String BOOKMARKS_TIP_ABLE = "bookmarksTipAble";
     public final static String CUSTOM_TABS_TIPS_ENABLE = "customTabsTipsEnable";
     public final static String TOPICS_TIP_ABLE = "topicsTipAble";
+    public final static String TOPICS_EDITOR_TIP_ABLE = "topicsEditorTipAble";
+    public final static String TOPICS_SEARCH_SORT = "topicsSearchSort";
     public final static String DISABLE_LOADING_IMAGE = "disableLoadingImage";
 
 
@@ -148,6 +150,10 @@ public class PrefUtils {
         return getDefaultSp(AppApplication.get()).getBoolean(LANGUAGES_EDITOR_TIP_ABLE, true);
     }
 
+    public static boolean isTopicsEditorTipAble(){
+        return getDefaultSp(AppApplication.get()).getBoolean(TOPICS_EDITOR_TIP_ABLE, true);
+    }
+
     public static int getPopTimes(){
         return getDefaultSp(AppApplication.get()).getInt(POP_TIMES, 0);
     }
@@ -198,6 +204,14 @@ public class PrefUtils {
 
     public static boolean isTopicsTipEnable(){
         return getDefaultSp(AppApplication.get()).getBoolean(TOPICS_TIP_ABLE, true);
+    }
+
+    public static String getTopicsSearchSort(){
+        return getDefaultSp(AppApplication.get()).getString(TOPICS_SEARCH_SORT, "stars");
+    }
+
+    public static void setTopicsSearchSort(String sort){
+        set(TOPICS_SEARCH_SORT, sort);
     }
 
     public static boolean isDisableLoadingImage(){
