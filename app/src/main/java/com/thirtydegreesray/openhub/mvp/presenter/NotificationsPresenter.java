@@ -136,8 +136,24 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
                 repository.getOwner().getLogin(), repository.getName()), null);
 
         for(DoubleTypesModel<Repository, Notification> model : sortedNotifications){
-            if(model.getM2() != null && model.getM2().getRepository().getId() == repository.getId()){
+            if(model.getM1() != null && model.getM1().getId() == repository.getId()){
+                model.setAllRead(true);
+            } else if(model.getM2() != null && model.getM2().getRepository().getId() == repository.getId()){
                 model.getM2().setUnread(false);
+            }
+        }
+        mView.showNotifications(sortedNotifications);
+    }
+
+    @Override
+    public void removeRepoNotifications(@NonNull Repository repository) {
+        Iterator<DoubleTypesModel<Repository, Notification>> iterator = sortedNotifications.iterator();
+        while(iterator.hasNext()){
+            DoubleTypesModel<Repository, Notification> model = iterator.next();
+            if(model.getM1() != null && model.getM1().getId() == repository.getId()){
+                iterator.remove();
+            } else if(model.getM2() != null && model.getM2().getRepository().getId() == repository.getId()){
+                iterator.remove();
             }
         }
         mView.showNotifications(sortedNotifications);

@@ -87,6 +87,11 @@ public class NotificationsAdapter extends BaseAdapter<BaseViewHolder,
                     .load(model.getOwner().getAvatarUrl())
                     .onlyRetrieveFromCache(!PrefUtils.isLoadImageEnable())
                     .into(holder.userAvatar);
+            boolean allRead = data.get(position).isAllRead();
+            holder.markAsReadBn.setImageResource(
+                    allRead ? R.drawable.ic_done_all_title : R.drawable.ic_done_title);
+            holder.markAsReadBn.setToastText(getString(
+                    allRead ? R.string.remove_from_list : R.string.mark_as_read));
         } else {
             NotificationViewHolder holder = (NotificationViewHolder) viewHolder;
             Notification model = data.get(position).getM2();
@@ -157,7 +162,12 @@ public class NotificationsAdapter extends BaseAdapter<BaseViewHolder,
         @OnClick(R2.id.mark_as_read_bn)
         public void onMarkAsReadClicked() {
             if(getAdapterPosition() != RecyclerView.NO_POSITION) {
-                listener.onRepoMarkAsReadClicked(data.get(getAdapterPosition()).getM1());
+                DoubleTypesModel<Repository, Notification> model = data.get(getAdapterPosition());
+                if(model.isAllRead()){
+                    listener.onRepoRemoveClicked(model.getM1());
+                } else {
+                    listener.onRepoMarkAsReadClicked(model.getM1());
+                }
             }
         }
 
@@ -169,6 +179,7 @@ public class NotificationsAdapter extends BaseAdapter<BaseViewHolder,
 
     public interface NotificationAdapterListener{
         void onRepoMarkAsReadClicked(@NonNull Repository repository);
+        void onRepoRemoveClicked(@NonNull Repository repository);
     }
 
 }

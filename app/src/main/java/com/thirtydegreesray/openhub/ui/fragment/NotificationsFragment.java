@@ -146,4 +146,9 @@ public class NotificationsFragment extends ListFragment<NotificationsPresenter, 
         mPresenter.markRepoNotificationsAsRead(repository);
     }
 
+    @Override
+    public void onRepoRemoveClicked(@NonNull Repository repository) {
+        mPresenter.removeRepoNotifications(repository);
+    }
+
 }

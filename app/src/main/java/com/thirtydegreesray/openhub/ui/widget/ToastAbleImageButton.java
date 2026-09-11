@@ -53,6 +53,13 @@ public class ToastAbleImageButton extends AppCompatImageView
         }
     }
 
+    public void setToastText(String toastText) {
+        this.toastText = toastText;
+        if(!StringUtils.isBlank(toastText)){
+            setOnLongClickListener(this);
+        }
+    }
+
     @Override
     public boolean onLongClick(View v) {
         Toast toast = Toast.makeText(getContext(), toastText, Toast.LENGTH_SHORT);

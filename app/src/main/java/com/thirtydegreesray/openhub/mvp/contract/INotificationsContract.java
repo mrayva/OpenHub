@@ -29,6 +29,9 @@ public interface INotificationsContract {
         void markAllNotificationsAsRead();
         boolean isNotificationsAllRead();
         void markRepoNotificationsAsRead(@NonNull Repository repository);
+
+        /** The repo's header double-check was tapped - remove its whole group (header + rows) from the list. */
+        void removeRepoNotifications(@NonNull Repository repository);
     }
 
 }
