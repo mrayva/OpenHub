@@ -363,31 +363,35 @@ public class RepositoryPresenter extends BasePresenter<IRepositoryContract.View>
     public void bookmark(boolean bookmark) {
         if(repository == null) return;
         bookmarked = bookmark;
-        Bookmark bookmarkModel = daoSession.getBookmarkDao().queryBuilder()
-                .where(BookmarkDao.Properties.RepoId.eq(repository.getId()))
-                .unique();
-        if(bookmark && bookmarkModel == null){
-            bookmarkModel = new Bookmark(UUID.randomUUID().toString());
-            bookmarkModel.setType("repo");
-            bookmarkModel.setRepoId((long) repository.getId());
-            bookmarkModel.setMarkTime(new Date());
-            daoSession.getBookmarkDao().insert(bookmarkModel);
-        } else if(!bookmark && bookmarkModel != null){
-            daoSession.getBookmarkDao().delete(bookmarkModel);
-        }
+        final Repository repoAtBookmarkTime = repository;
+        rxDBExecute(() -> {
+            Bookmark bookmarkModel = daoSession.getBookmarkDao().queryBuilder()
+                    .where(BookmarkDao.Properties.RepoId.eq(repoAtBookmarkTime.getId()))
+                    .unique();
+            if(bookmark && bookmarkModel == null){
+                bookmarkModel = new Bookmark(UUID.randomUUID().toString());
+                bookmarkModel.setType("repo");
+                bookmarkModel.setRepoId((long) repoAtBookmarkTime.getId());
+                bookmarkModel.setMarkTime(new Date());
+                daoSession.getBookmarkDao().insert(bookmarkModel);
+            } else if(!bookmark && bookmarkModel != null){
+                daoSession.getBookmarkDao().delete(bookmarkModel);
+            }
+        });
     }
 
     private void saveTrace(){
-        daoSession.runInTx(() ->{
+        final Repository repoAtTraceTime = repository;
+        rxDBExecute(() ->{
             if(!isTraceSaved){
                 Trace trace = daoSession.getTraceDao().queryBuilder()
-                        .where(TraceDao.Properties.RepoId.eq(repository.getId()))
+                        .where(TraceDao.Properties.RepoId.eq(repoAtTraceTime.getId()))
                         .unique();
 
                 if(trace == null){
                     trace = new Trace(UUID.randomUUID().toString());
                     trace.setType("repo");
-                    trace.setRepoId((long) repository.getId());
+                    trace.setRepoId((long) repoAtTraceTime.getId());
                     Date curDate = new Date();
                     trace.setStartTime(curDate);
                     trace.setLatestTime(curDate);
@@ -400,8 +404,8 @@ public class RepositoryPresenter extends BasePresenter<IRepositoryContract.View>
                 }
             }
 
-            LocalRepo localRepo = daoSession.getLocalRepoDao().load((long) repository.getId());
-            LocalRepo updateRepo = repository.toLocalRepo();
+            LocalRepo localRepo = daoSession.getLocalRepoDao().load((long) repoAtTraceTime.getId());
+            LocalRepo updateRepo = repoAtTraceTime.toLocalRepo();
             if(localRepo == null){
                 daoSession.getLocalRepoDao().insert(updateRepo);
             } else {

@@ -171,7 +171,6 @@ dependencies {
     implementation "com.afollestad.material-dialogs:commons:${MATERIAL_DIALOG_VERSION}"
 
     implementation "com.zzhoujay.richtext:richtext:${RICKTEXT_VERSION}"
-    implementation 'com.zzhoujay.glideimagegetter:glideimagegetter:1.0.5'
 
     implementation "com.orhanobut:logger:${LOGGER_VERSION}"
     implementation "com.timehop.stickyheadersrecyclerview:library:${STICKY_HEAD_VERSION}"
