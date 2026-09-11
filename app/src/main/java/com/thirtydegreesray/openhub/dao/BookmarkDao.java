@@ -47,6 +47,12 @@ public class BookmarkDao extends AbstractDao<Bookmark, String> {
                 "\"USER_ID\" TEXT," + // 2: userId
                 "\"REPO_ID\" INTEGER," + // 3: repoId
                 "\"MARK_TIME\" INTEGER);"); // 4: markTime
+        db.execSQL("CREATE INDEX " + constraint + "IDX_BOOKMARK_TYPE ON \"BOOKMARK\"" +
+                " (\"TYPE\");");
+        db.execSQL("CREATE INDEX " + constraint + "IDX_BOOKMARK_USER_ID ON \"BOOKMARK\"" +
+                " (\"USER_ID\");");
+        db.execSQL("CREATE INDEX " + constraint + "IDX_BOOKMARK_REPO_ID ON \"BOOKMARK\"" +
+                " (\"REPO_ID\");");
     }
 
     /** Drops the underlying database table. */

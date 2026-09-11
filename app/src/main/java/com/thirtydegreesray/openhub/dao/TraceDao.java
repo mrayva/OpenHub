@@ -51,6 +51,12 @@ public class TraceDao extends AbstractDao<Trace, String> {
                 "\"START_TIME\" INTEGER," + // 4: startTime
                 "\"LATEST_TIME\" INTEGER," + // 5: latestTime
                 "\"TRACE_NUM\" INTEGER);"); // 6: traceNum
+        db.execSQL("CREATE INDEX " + constraint + "IDX_TRACE_TYPE ON \"TRACE\"" +
+                " (\"TYPE\");");
+        db.execSQL("CREATE INDEX " + constraint + "IDX_TRACE_USER_ID ON \"TRACE\"" +
+                " (\"USER_ID\");");
+        db.execSQL("CREATE INDEX " + constraint + "IDX_TRACE_REPO_ID ON \"TRACE\"" +
+                " (\"REPO_ID\");");
     }
 
     /** Drops the underlying database table. */

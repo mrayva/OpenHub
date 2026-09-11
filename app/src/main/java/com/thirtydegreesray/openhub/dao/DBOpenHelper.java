@@ -50,6 +50,17 @@ public class DBOpenHelper extends DaoMaster.DevOpenHelper {
             MyTrendingLanguageDao.createTable(db, true);
         } else if(oldVersion == 5 && newVersion == 6){
             MyTopicDao.createTable(db, true);
+        } else if(oldVersion == 6 && newVersion == 7){
+            // Bookmark/Trace were queried by RepoId/UserId/Type with no
+            // index (full table scan), matching what createTable() now
+            // creates for a fresh install - add the same indexes here for
+            // upgrades from an existing install.
+            db.execSQL("CREATE INDEX IF NOT EXISTS IDX_BOOKMARK_TYPE ON \"BOOKMARK\" (\"TYPE\");");
+            db.execSQL("CREATE INDEX IF NOT EXISTS IDX_BOOKMARK_USER_ID ON \"BOOKMARK\" (\"USER_ID\");");
+            db.execSQL("CREATE INDEX IF NOT EXISTS IDX_BOOKMARK_REPO_ID ON \"BOOKMARK\" (\"REPO_ID\");");
+            db.execSQL("CREATE INDEX IF NOT EXISTS IDX_TRACE_TYPE ON \"TRACE\" (\"TYPE\");");
+            db.execSQL("CREATE INDEX IF NOT EXISTS IDX_TRACE_USER_ID ON \"TRACE\" (\"USER_ID\");");
+            db.execSQL("CREATE INDEX IF NOT EXISTS IDX_TRACE_REPO_ID ON \"TRACE\" (\"REPO_ID\");");
         } else {
             super.onUpgrade(db, oldVersion, newVersion);
         }

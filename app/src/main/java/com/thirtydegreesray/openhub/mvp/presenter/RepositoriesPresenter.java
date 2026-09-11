@@ -335,55 +335,81 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         return filter;
     }
 
-    private void loadTrace(int page) {
-        long start = System.currentTimeMillis();
+    private void loadTrace(final int page) {
+        mView.showLoading();
+        Observable.fromCallable(() -> {
+            long start = System.currentTimeMillis();
 
-        // TraceRepoDao/TraceUserDao are pre-v4-schema tables: a v3->v4
-        // migration moved trace tracking into the unified Trace table (repo
-        // vs user rows told apart by type) plus LocalRepo/LocalUser for the
-        // actual repo/user data, and drops the old tables outright on any DB
-        // that goes through that migration - querying them there crashed
-        // with "no such table", and even on a fresh install (where they
-        // still get created empty) nothing writes to them anymore, since
-        // RepositoryPresenter.saveTrace() already writes into Trace/LocalRepo.
-        List<Trace> traces = daoSession.getTraceDao().queryBuilder()
-                .where(TraceDao.Properties.Type.eq("repo"))
-                .orderDesc(TraceDao.Properties.LatestTime)
-                .offset((page - 1) * 30)
-                .limit(page * 30)
-                .list();
+            // TraceRepoDao/TraceUserDao are pre-v4-schema tables: a v3->v4
+            // migration moved trace tracking into the unified Trace table (repo
+            // vs user rows told apart by type) plus LocalRepo/LocalUser for the
+            // actual repo/user data, and drops the old tables outright on any DB
+            // that goes through that migration - querying them there crashed
+            // with "no such table", and even on a fresh install (where they
+            // still get created empty) nothing writes to them anymore, since
+            // RepositoryPresenter.saveTrace() already writes into Trace/LocalRepo.
+            List<Trace> traces = daoSession.getTraceDao().queryBuilder()
+                    .where(TraceDao.Properties.Type.eq("repo"))
+                    .orderDesc(TraceDao.Properties.LatestTime)
+                    .offset((page - 1) * 30)
+                    .limit(page * 30)
+                    .list();
 
-        ArrayList<Repository> queryRepos = new ArrayList<>();
-        for (Trace trace : traces) {
-            LocalRepo localRepo = daoSession.getLocalRepoDao().load(trace.getRepoId());
-            if (localRepo != null) {
-                queryRepos.add(Repository.generateFromLocalRepo(localRepo));
+            ArrayList<Repository> queryRepos = new ArrayList<>();
+            for (Trace trace : traces) {
+                LocalRepo localRepo = daoSession.getLocalRepoDao().load(trace.getRepoId());
+                if (localRepo != null) {
+                    queryRepos.add(Repository.generateFromLocalRepo(localRepo));
+                }
             }
-        }
-        Logger.t("loadTrace").d(System.currentTimeMillis() - start);
-        showQueryRepos(queryRepos, page);
+            Logger.t("loadTrace").d(System.currentTimeMillis() - start);
+            return queryRepos;
+        })
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(queryRepos -> {
+            if (mView == null) return;
+            showQueryRepos(queryRepos, page);
+        }, error -> {
+            if (mView == null) return;
+            mView.hideLoading();
+            mView.showLoadError(getErrorTip(error));
+        });
     }
 
-    private void loadBookmarks(int page) {
-        // Same stale-table bug as loadTrace() (see its comment): BookMarkRepoDao
-        // is a pre-v4-schema table nothing writes to anymore - bookmarking now
-        // writes into the unified Bookmark table (repoId/userId + type) plus
-        // LocalRepo/LocalUser for the actual repo/user data.
-        List<Bookmark> bookmarks = daoSession.getBookmarkDao().queryBuilder()
-                .where(BookmarkDao.Properties.Type.eq("repo"))
-                .orderDesc(BookmarkDao.Properties.MarkTime)
-                .offset((page - 1) * 30)
-                .limit(page * 30)
-                .list();
+    private void loadBookmarks(final int page) {
+        mView.showLoading();
+        Observable.fromCallable(() -> {
+            // Same stale-table bug as loadTrace() (see its comment): BookMarkRepoDao
+            // is a pre-v4-schema table nothing writes to anymore - bookmarking now
+            // writes into the unified Bookmark table (repoId/userId + type) plus
+            // LocalRepo/LocalUser for the actual repo/user data.
+            List<Bookmark> bookmarks = daoSession.getBookmarkDao().queryBuilder()
+                    .where(BookmarkDao.Properties.Type.eq("repo"))
+                    .orderDesc(BookmarkDao.Properties.MarkTime)
+                    .offset((page - 1) * 30)
+                    .limit(page * 30)
+                    .list();
 
-        ArrayList<Repository> queryRepos = new ArrayList<>();
-        for (Bookmark bookmark : bookmarks) {
-            LocalRepo localRepo = daoSession.getLocalRepoDao().load(bookmark.getRepoId());
-            if (localRepo != null) {
-                queryRepos.add(Repository.generateFromLocalRepo(localRepo));
+            ArrayList<Repository> queryRepos = new ArrayList<>();
+            for (Bookmark bookmark : bookmarks) {
+                LocalRepo localRepo = daoSession.getLocalRepoDao().load(bookmark.getRepoId());
+                if (localRepo != null) {
+                    queryRepos.add(Repository.generateFromLocalRepo(localRepo));
+                }
             }
-        }
-        showQueryRepos(queryRepos, page);
+            return queryRepos;
+        })
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(queryRepos -> {
+            if (mView == null) return;
+            showQueryRepos(queryRepos, page);
+        }, error -> {
+            if (mView == null) return;
+            mView.hideLoading();
+            mView.showLoadError(getErrorTip(error));
+        });
     }
 
     private void showQueryRepos(ArrayList<Repository> queryRepos, int page){

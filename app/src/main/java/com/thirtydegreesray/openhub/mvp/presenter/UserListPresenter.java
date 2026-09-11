@@ -30,6 +30,8 @@ import javax.inject.Inject;
 
 import retrofit2.Response;
 import rx.Observable;
+import rx.android.schedulers.AndroidSchedulers;
+import rx.schedulers.Schedulers;
 
 /**
  * Created by ThirtyDegreesRay on 2017/8/16 17:38:43
@@ -183,47 +185,73 @@ public class UserListPresenter extends BasePagerPresenter<IUserListContract.View
         }
     }
 
-    private void loadTrace(int page){
-        // See RepositoriesPresenter.loadTrace()'s comment: TraceUserDao is a
-        // pre-v4-schema table nothing writes to anymore (or, on a DB that's
-        // gone through that migration, doesn't even exist) - trace tracking
-        // now lives in the unified Trace table (repoId/userId + type) plus
-        // LocalUser for the actual profile data.
-        List<Trace> traces = daoSession.getTraceDao().queryBuilder()
-                .where(TraceDao.Properties.Type.eq("user"))
-                .orderDesc(TraceDao.Properties.LatestTime)
-                .offset((page - 1) * 30)
-                .limit(page * 30)
-                .list();
-        ArrayList<User> queryUsers = new ArrayList<>();
-        for(Trace trace : traces){
-            LocalUser localUser = daoSession.getLocalUserDao().load(trace.getUserId());
-            if (localUser != null) {
-                queryUsers.add(User.generateFromLocalUser(localUser));
+    private void loadTrace(final int page){
+        mView.showLoading();
+        Observable.fromCallable(() -> {
+            // See RepositoriesPresenter.loadTrace()'s comment: TraceUserDao is a
+            // pre-v4-schema table nothing writes to anymore (or, on a DB that's
+            // gone through that migration, doesn't even exist) - trace tracking
+            // now lives in the unified Trace table (repoId/userId + type) plus
+            // LocalUser for the actual profile data.
+            List<Trace> traces = daoSession.getTraceDao().queryBuilder()
+                    .where(TraceDao.Properties.Type.eq("user"))
+                    .orderDesc(TraceDao.Properties.LatestTime)
+                    .offset((page - 1) * 30)
+                    .limit(page * 30)
+                    .list();
+            ArrayList<User> queryUsers = new ArrayList<>();
+            for(Trace trace : traces){
+                LocalUser localUser = daoSession.getLocalUserDao().load(trace.getUserId());
+                if (localUser != null) {
+                    queryUsers.add(User.generateFromLocalUser(localUser));
+                }
             }
-        }
-        showQueryUsers(queryUsers, page);
+            return queryUsers;
+        })
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(queryUsers -> {
+            if (mView == null) return;
+            showQueryUsers(queryUsers, page);
+        }, error -> {
+            if (mView == null) return;
+            mView.hideLoading();
+            mView.showLoadError(getErrorTip(error));
+        });
     }
 
-    private void loadBookmarks(int page){
-        // Same stale-table bug as loadTrace() (see its comment): BookMarkUserDao
-        // is a pre-v4-schema table nothing writes to anymore - bookmarking now
-        // writes into the unified Bookmark table (repoId/userId + type) plus
-        // LocalRepo/LocalUser for the actual repo/user data.
-        List<Bookmark> bookmarks = daoSession.getBookmarkDao().queryBuilder()
-                .where(BookmarkDao.Properties.Type.eq("user"))
-                .orderDesc(BookmarkDao.Properties.MarkTime)
-                .offset((page - 1) * 30)
-                .limit(page * 30)
-                .list();
-        ArrayList<User> queryUsers = new ArrayList<>();
-        for(Bookmark bookmark : bookmarks){
-            LocalUser localUser = daoSession.getLocalUserDao().load(bookmark.getUserId());
-            if (localUser != null) {
-                queryUsers.add(User.generateFromLocalUser(localUser));
+    private void loadBookmarks(final int page){
+        mView.showLoading();
+        Observable.fromCallable(() -> {
+            // Same stale-table bug as loadTrace() (see its comment): BookMarkUserDao
+            // is a pre-v4-schema table nothing writes to anymore - bookmarking now
+            // writes into the unified Bookmark table (repoId/userId + type) plus
+            // LocalRepo/LocalUser for the actual repo/user data.
+            List<Bookmark> bookmarks = daoSession.getBookmarkDao().queryBuilder()
+                    .where(BookmarkDao.Properties.Type.eq("user"))
+                    .orderDesc(BookmarkDao.Properties.MarkTime)
+                    .offset((page - 1) * 30)
+                    .limit(page * 30)
+                    .list();
+            ArrayList<User> queryUsers = new ArrayList<>();
+            for(Bookmark bookmark : bookmarks){
+                LocalUser localUser = daoSession.getLocalUserDao().load(bookmark.getUserId());
+                if (localUser != null) {
+                    queryUsers.add(User.generateFromLocalUser(localUser));
+                }
             }
-        }
-        showQueryUsers(queryUsers, page);
+            return queryUsers;
+        })
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(queryUsers -> {
+            if (mView == null) return;
+            showQueryUsers(queryUsers, page);
+        }, error -> {
+            if (mView == null) return;
+            mView.hideLoading();
+            mView.showLoadError(getErrorTip(error));
+        });
     }
 
     private void showQueryUsers(ArrayList<User> queryUsers, int page){
