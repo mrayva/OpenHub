@@ -4,8 +4,8 @@ package com.thirtydegreesray.openhub.mvp.presenter;
 
 import com.thirtydegreesray.dataautoaccess.annotation.AutoAccess;
 import com.thirtydegreesray.openhub.common.Event;
-import com.thirtydegreesray.openhub.dao.BookMarkUser;
-import com.thirtydegreesray.openhub.dao.BookMarkUserDao;
+import com.thirtydegreesray.openhub.dao.Bookmark;
+import com.thirtydegreesray.openhub.dao.BookmarkDao;
 import com.thirtydegreesray.openhub.dao.DaoSession;
 import com.thirtydegreesray.openhub.dao.LocalUser;
 import com.thirtydegreesray.openhub.dao.Trace;
@@ -206,14 +206,22 @@ public class UserListPresenter extends BasePagerPresenter<IUserListContract.View
     }
 
     private void loadBookmarks(int page){
-        List<BookMarkUser> bookMarkUsers = daoSession.getBookMarkUserDao().queryBuilder()
-                .orderDesc(BookMarkUserDao.Properties.MarkTime)
+        // Same stale-table bug as loadTrace() (see its comment): BookMarkUserDao
+        // is a pre-v4-schema table nothing writes to anymore - bookmarking now
+        // writes into the unified Bookmark table (repoId/userId + type) plus
+        // LocalRepo/LocalUser for the actual repo/user data.
+        List<Bookmark> bookmarks = daoSession.getBookmarkDao().queryBuilder()
+                .where(BookmarkDao.Properties.Type.eq("user"))
+                .orderDesc(BookmarkDao.Properties.MarkTime)
                 .offset((page - 1) * 30)
                 .limit(page * 30)
                 .list();
         ArrayList<User> queryUsers = new ArrayList<>();
-        for(BookMarkUser bookMarkUser : bookMarkUsers){
-            queryUsers.add(User.generateFromBookmark(bookMarkUser));
+        for(Bookmark bookmark : bookmarks){
+            LocalUser localUser = daoSession.getLocalUserDao().load(bookmark.getUserId());
+            if (localUser != null) {
+                queryUsers.add(User.generateFromLocalUser(localUser));
+            }
         }
         showQueryUsers(queryUsers, page);
     }
