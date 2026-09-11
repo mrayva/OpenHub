@@ -51,6 +51,14 @@ android {
         release {
             minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            // No dedicated release keystore exists for this fork (the
+            // committed OpenHubPublicSign.jks is an orphaned leftover from
+            // the original repo with no known password, and isn't wired up
+            // anywhere) - sign with the auto-generated debug key instead so
+            // the release build type actually produces an installable APK.
+            // Fine for local builds/side-loading; not suitable for Play
+            // Store publishing, which would need its own real keystore.
+            signingConfig signingConfigs.debug
         }
         debug {
         }

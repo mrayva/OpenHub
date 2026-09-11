@@ -3,8 +3,11 @@
 #
 # Usage:
 #   ./build-apk.sh              # build normal-flavor debug APK (default)
-#   ./build-apk.sh release      # build normal-flavor release APK (unsigned - no
-#                                # signingConfig is defined for release in this project)
+#   ./build-apk.sh release      # build normal-flavor release APK, minified/
+#                                # shrunk, signed with the debug key (no
+#                                # dedicated release keystore exists for this
+#                                # fork - fine for local builds/side-loading,
+#                                # not for Play Store publishing)
 #   ./build-apk.sh fullname     # build fullName-flavor debug APK instead
 #
 # Unlike FastHub-RE, OpenHub needs no secrets.properties or custom keystore to
