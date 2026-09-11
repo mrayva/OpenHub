@@ -8,7 +8,6 @@ import android.os.Parcelable;
 import com.google.gson.annotations.SerializedName;
 import com.thirtydegreesray.openhub.dao.BookMarkRepo;
 import com.thirtydegreesray.openhub.dao.LocalRepo;
-import com.thirtydegreesray.openhub.dao.TraceRepo;
 import com.thirtydegreesray.openhub.mvp.model.filter.TrendingSince;
 
 import java.util.Date;
@@ -92,23 +91,6 @@ public class Repository implements Parcelable {
         User user = new User();
         user.setLogin(localRepo.getOwnerLogin());
         user.setAvatarUrl(localRepo.getOwnerAvatarUrl());
-        repo.setOwner(user);
-        return repo;
-    }
-
-    public static Repository generateFromTrace(TraceRepo trace){
-        Repository repo = new Repository();
-        repo.setId((int) trace.getId());
-        repo.setName(trace.getName());
-        repo.setDescription(trace.getDescription());
-        repo.setLanguage(trace.getLanguage());
-        repo.setStargazersCount(trace.getStargazersCount());
-        repo.setWatchersCount(trace.getWatchersCount());
-        repo.setForksCount(trace.getForksCount());
-        repo.setFork(trace.getFork());
-        User user = new User();
-        user.setLogin(trace.getOwnerLogin());
-        user.setAvatarUrl(trace.getOwnerAvatarUrl());
         repo.setOwner(user);
         return repo;
     }

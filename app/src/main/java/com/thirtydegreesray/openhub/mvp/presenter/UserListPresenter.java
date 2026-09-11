@@ -7,8 +7,9 @@ import com.thirtydegreesray.openhub.common.Event;
 import com.thirtydegreesray.openhub.dao.BookMarkUser;
 import com.thirtydegreesray.openhub.dao.BookMarkUserDao;
 import com.thirtydegreesray.openhub.dao.DaoSession;
-import com.thirtydegreesray.openhub.dao.TraceUser;
-import com.thirtydegreesray.openhub.dao.TraceUserDao;
+import com.thirtydegreesray.openhub.dao.LocalUser;
+import com.thirtydegreesray.openhub.dao.Trace;
+import com.thirtydegreesray.openhub.dao.TraceDao;
 import com.thirtydegreesray.openhub.http.core.HttpObserver;
 import com.thirtydegreesray.openhub.http.core.HttpResponse;
 import com.thirtydegreesray.openhub.http.error.HttpPageNoFoundError;
@@ -183,14 +184,23 @@ public class UserListPresenter extends BasePagerPresenter<IUserListContract.View
     }
 
     private void loadTrace(int page){
-        List<TraceUser> traceUsers = daoSession.getTraceUserDao().queryBuilder()
-                .orderDesc(TraceUserDao.Properties.LatestTime)
+        // See RepositoriesPresenter.loadTrace()'s comment: TraceUserDao is a
+        // pre-v4-schema table nothing writes to anymore (or, on a DB that's
+        // gone through that migration, doesn't even exist) - trace tracking
+        // now lives in the unified Trace table (repoId/userId + type) plus
+        // LocalUser for the actual profile data.
+        List<Trace> traces = daoSession.getTraceDao().queryBuilder()
+                .where(TraceDao.Properties.Type.eq("user"))
+                .orderDesc(TraceDao.Properties.LatestTime)
                 .offset((page - 1) * 30)
                 .limit(page * 30)
                 .list();
         ArrayList<User> queryUsers = new ArrayList<>();
-        for(TraceUser traceUser : traceUsers){
-            queryUsers.add(User.generateFromTrace(traceUser));
+        for(Trace trace : traces){
+            LocalUser localUser = daoSession.getLocalUserDao().load(trace.getUserId());
+            if (localUser != null) {
+                queryUsers.add(User.generateFromLocalUser(localUser));
+            }
         }
         showQueryUsers(queryUsers, page);
     }

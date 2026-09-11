@@ -14,8 +14,9 @@ import com.thirtydegreesray.openhub.common.Event;
 import com.thirtydegreesray.openhub.dao.BookMarkRepo;
 import com.thirtydegreesray.openhub.dao.BookMarkRepoDao;
 import com.thirtydegreesray.openhub.dao.DaoSession;
-import com.thirtydegreesray.openhub.dao.TraceRepo;
-import com.thirtydegreesray.openhub.dao.TraceRepoDao;
+import com.thirtydegreesray.openhub.dao.LocalRepo;
+import com.thirtydegreesray.openhub.dao.Trace;
+import com.thirtydegreesray.openhub.dao.TraceDao;
 import com.thirtydegreesray.openhub.http.core.HttpObserver;
 import com.thirtydegreesray.openhub.http.core.HttpResponse;
 import com.thirtydegreesray.openhub.http.error.HttpPageNoFoundError;
@@ -327,15 +328,27 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
     private void loadTrace(int page) {
         long start = System.currentTimeMillis();
 
-        List<TraceRepo> traceRepos = daoSession.getTraceRepoDao().queryBuilder()
-                .orderDesc(TraceRepoDao.Properties.LatestTime)
+        // TraceRepoDao/TraceUserDao are pre-v4-schema tables: a v3->v4
+        // migration moved trace tracking into the unified Trace table (repo
+        // vs user rows told apart by type) plus LocalRepo/LocalUser for the
+        // actual repo/user data, and drops the old tables outright on any DB
+        // that goes through that migration - querying them there crashed
+        // with "no such table", and even on a fresh install (where they
+        // still get created empty) nothing writes to them anymore, since
+        // RepositoryPresenter.saveTrace() already writes into Trace/LocalRepo.
+        List<Trace> traces = daoSession.getTraceDao().queryBuilder()
+                .where(TraceDao.Properties.Type.eq("repo"))
+                .orderDesc(TraceDao.Properties.LatestTime)
                 .offset((page - 1) * 30)
                 .limit(page * 30)
                 .list();
 
         ArrayList<Repository> queryRepos = new ArrayList<>();
-        for (TraceRepo traceRepo : traceRepos) {
-            queryRepos.add(Repository.generateFromTrace(traceRepo));
+        for (Trace trace : traces) {
+            LocalRepo localRepo = daoSession.getLocalRepoDao().load(trace.getRepoId());
+            if (localRepo != null) {
+                queryRepos.add(Repository.generateFromLocalRepo(localRepo));
+            }
         }
         Logger.t("loadTrace").d(System.currentTimeMillis() - start);
         showQueryRepos(queryRepos, page);

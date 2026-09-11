@@ -8,7 +8,6 @@ import android.os.Parcelable;
 import com.google.gson.annotations.SerializedName;
 import com.thirtydegreesray.openhub.dao.BookMarkUser;
 import com.thirtydegreesray.openhub.dao.LocalUser;
-import com.thirtydegreesray.openhub.dao.TraceUser;
 
 import java.util.Date;
 
@@ -64,16 +63,6 @@ public class User implements Parcelable {
         user.setFollowers(localUser.getFollowers());
         user.setFollowing(localUser.getFollowing());
         user.setAvatarUrl(localUser.getAvatarUrl());
-        return user;
-    }
-
-    public static User generateFromTrace(TraceUser trace){
-        User user = new User();
-        user.setLogin(trace.getLogin());
-        user.setName(trace.getName());
-        user.setFollowers(trace.getFollowers());
-        user.setFollowing(trace.getFollowing());
-        user.setAvatarUrl(trace.getAvatarUrl());
         return user;
     }
 
