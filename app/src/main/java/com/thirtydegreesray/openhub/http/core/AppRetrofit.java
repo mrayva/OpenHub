@@ -46,24 +46,36 @@ public enum  AppRetrofit {
     private HashMap<String, Retrofit> retrofitMap = new HashMap<>();
     private String token;
 
+    // Shared across every baseUrl/isJson combination: they all hit the same
+    // on-disk HTTP cache directory (FileUtil.getHttpImageCacheDir()), and
+    // multiple independent okhttp3.Cache instances writing that one journal
+    // file concurrently is an OkHttp anti-pattern (corrupted/ineffective
+    // cache), not just wasted connection pools/memory.
+    private OkHttpClient okHttpClient;
+
+    private OkHttpClient getOkHttpClient() {
+        if (okHttpClient == null) {
+            int timeOut = AppConfig.HTTP_TIME_OUT;
+            Cache cache = new Cache(FileUtil.getHttpImageCacheDir(AppApplication.get()),
+                    AppConfig.HTTP_MAX_CACHE_SIZE);
+
+            okHttpClient = new OkHttpClient.Builder()
+                    .connectTimeout(timeOut, TimeUnit.MILLISECONDS)
+                    .readTimeout(timeOut, TimeUnit.MILLISECONDS)
+                    .writeTimeout(timeOut, TimeUnit.MILLISECONDS)
+                    .addInterceptor(new BaseInterceptor())
+                    .addNetworkInterceptor(new NetworkBaseInterceptor())
+                    .cache(cache)
+                    .build();
+        }
+        return okHttpClient;
+    }
+
     private void createRetrofit(@NonNull String baseUrl, boolean isJson) {
-        int timeOut = AppConfig.HTTP_TIME_OUT;
-        Cache cache = new Cache(FileUtil.getHttpImageCacheDir(AppApplication.get()),
-                AppConfig.HTTP_MAX_CACHE_SIZE);
-
-        OkHttpClient okHttpClient = new OkHttpClient.Builder()
-                .connectTimeout(timeOut, TimeUnit.MILLISECONDS)
-                .readTimeout(timeOut, TimeUnit.MILLISECONDS)
-                .writeTimeout(timeOut, TimeUnit.MILLISECONDS)
-                .addInterceptor(new BaseInterceptor())
-                .addNetworkInterceptor(new NetworkBaseInterceptor())
-                .cache(cache)
-                .build();
-
         Retrofit.Builder builder = new Retrofit.Builder()
                 .baseUrl(baseUrl)
                 .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
-                .client(okHttpClient);
+                .client(getOkHttpClient());
 
         if(isJson){
             builder.addConverterFactory(GsonConverterFactory.create());
