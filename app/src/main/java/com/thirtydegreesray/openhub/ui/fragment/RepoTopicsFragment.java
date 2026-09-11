@@ -12,6 +12,7 @@ import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.R2;
 import com.thirtydegreesray.openhub.inject.component.AppComponent;
 import com.thirtydegreesray.openhub.mvp.model.Repository;
+import com.thirtydegreesray.openhub.ui.activity.TopicRepositoriesActivity;
 import com.thirtydegreesray.openhub.ui.adapter.RepoTopicsAdapter;
 import com.thirtydegreesray.openhub.ui.fragment.base.BaseFragment;
 import com.thirtydegreesray.openhub.util.BundleHelper;
@@ -51,6 +52,8 @@ public class RepoTopicsFragment extends BaseFragment {
         recyclerView.setLayoutManager(new LinearLayoutManager(getContext()));
         recyclerView.addItemDecoration(new DividerItemDecoration(getActivity(), DividerItemDecoration.VERTICAL));
         recyclerView.setAdapter(adapter);
+        adapter.setOnItemClickListener((position, view) ->
+                TopicRepositoriesActivity.show(getContext(), adapter.getData().get(position)));
 
         if (repository.getTopics() == null || repository.getTopics().isEmpty()) {
             emptyLay.setVisibility(View.VISIBLE);

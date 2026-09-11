@@ -439,6 +439,7 @@ public class Repository implements Parcelable {
         this.sinceStargazersCount = in.readInt();
         int tmpTrendingSince = in.readInt();
         this.since = tmpTrendingSince == -1 ? null : TrendingSince.values()[tmpTrendingSince];
+        this.topics = in.createStringArrayList();
     }
 
     public static final Creator<Repository> CREATOR = new Creator<Repository>() {
