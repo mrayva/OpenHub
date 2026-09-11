@@ -186,19 +186,7 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
     @Override
     protected void initFragment(Bundle savedInstanceState){
         super.initFragment(savedInstanceState);
-        setLoadMoreEnable(!RepositoriesType.COLLECTION.equals(mPresenter.getType())
-                && !isMultiTopicSearch());
-    }
-
-    /**
-     * TOPICS_SEARCH merges one query per selected topic client-side (see
-     * RepositoriesPresenter.searchMultiTopics()), which has no real page
-     * cursor to advance - load-more is only meaningful once exactly one
-     * topic is selected, where it's a normal single search query.
-     */
-    private boolean isMultiTopicSearch() {
-        return RepositoriesType.TOPICS_SEARCH.equals(mPresenter.getType())
-                && mPresenter.getTopicSlugs() != null && mPresenter.getTopicSlugs().size() > 1;
+        setLoadMoreEnable(!RepositoriesType.COLLECTION.equals(mPresenter.getType()));
     }
 
     @Override
@@ -296,13 +284,14 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
     public void onTopicsSearchUpdate(ArrayList<String> topicSlugs, String sort) {
         if(mPresenter != null){
             mPresenter.setTopicsSearchParams(topicSlugs, sort);
-            setLoadMoreEnable(topicSlugs.size() == 1);
             mPresenter.setLoaded(false);
             // Use onRefresh() rather than prepareLoadData() directly so the
             // fragment's own page counter resets to 1 too - otherwise a user
-            // who'd already scrolled to page 3 of one topic, then switched
-            // topics, would have the next load-more request page 4 instead
-            // of 2, skipping data.
+            // who'd already scrolled to page 3, then switched topics, would
+            // have the next load-more request page 4 instead of 2, skipping
+            // data (the presenter also independently resets its own
+            // per-topic page tracking on this path - see
+            // RepositoriesPresenter.searchMultiTopics()'s freshLoad param).
             onRefresh();
         } else {
             getArguments().putStringArrayList("topicSlugs", topicSlugs);

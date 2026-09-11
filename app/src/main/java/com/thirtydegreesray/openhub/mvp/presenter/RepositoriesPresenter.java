@@ -42,7 +42,13 @@ import org.jsoup.select.Elements;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -79,6 +85,15 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
 
     @AutoAccess ArrayList<String> topicSlugs;
     @AutoAccess String sort;
+
+    private static final int SEARCH_PAGE_SIZE = 30;
+
+    // Per-topic pagination state for searchMultiTopics() - not @AutoAccess,
+    // same as repos: lost on process death, which just means the next load
+    // starts fresh from page 1 for every topic, exactly like a first visit.
+    private Map<String, Integer> multiTopicNextPage;
+    private Set<String> multiTopicExhausted;
+    private Set<Integer> multiTopicSeenIds;
 
     @Inject
     public RepositoriesPresenter(DaoSession daoSession) {
@@ -125,7 +140,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                 initSearchModelForTopicsSearch();
                 searchRepos(1);
             } else {
-                searchMultiTopics();
+                searchMultiTopics(true);
             }
             return;
         }
@@ -165,7 +180,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                 initSearchModelForTopicsSearch();
                 searchRepos(page);
             } else {
-                searchMultiTopics();
+                searchMultiTopics(page == 1);
             }
             return;
         }
@@ -354,8 +369,18 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         this.sort = sort;
     }
 
-    public ArrayList<String> getTopicSlugs() {
-        return topicSlugs;
+    /**
+     * A single result of fetching one page of one topic's search, tagged
+     * with which topic it came from so the subscriber can advance that
+     * topic's own page counter and detect when it's exhausted.
+     */
+    private static class TopicPage {
+        final String topicSlug;
+        final ArrayList<Repository> items;
+        TopicPage(String topicSlug, ArrayList<Repository> items) {
+            this.topicSlug = topicSlug;
+            this.items = items;
+        }
     }
 
     /**
@@ -366,13 +391,23 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
      * in parallel, merges the results (de-duped by repo id), and re-sorts the
      * merged pool by the chosen field - each source list already comes back
      * sorted from GitHub, but interleaving several sorted lists isn't sorted
-     * as a whole. Load-more is intentionally not supported (mirrors how the
-     * COLLECTION type also disables it): true infinite scroll would need
-     * independently tracking a page cursor per topic, which isn't worth the
-     * complexity for what is already a "combine the top results of a few
-     * topics" feature.
+     * as a whole.
+     *
+     * Pagination works by tracking each topic's own next-page number and
+     * exhausted state independently (multiTopicNextPage/multiTopicExhausted):
+     * every load-more round re-queries only the topics that haven't yet
+     * returned a partial page, merges any new (not already seen) repos into
+     * the accumulated list, and re-sorts the whole thing. A topic is marked
+     * exhausted once it returns fewer than a full page - the same heuristic
+     * ListFragment itself uses for the single-query case. Load-more overall
+     * stays enabled until every topic is exhausted.
+     *
+     * @param freshLoad true for a first load or a reload (new topics/sort
+     *                  selection) - resets all pagination state and results;
+     *                  false to fetch the next page for each not-yet-
+     *                  exhausted topic and append.
      */
-    private void searchMultiTopics() {
+    private void searchMultiTopics(boolean freshLoad) {
         mView.showLoading();
         if (StringUtils.isBlankList(topicSlugs)) {
             repos = new ArrayList<>();
@@ -381,50 +416,76 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             mView.setCanLoadMore(false);
             return;
         }
+        if (freshLoad || multiTopicNextPage == null) {
+            multiTopicNextPage = new HashMap<>();
+            multiTopicExhausted = new HashSet<>();
+            multiTopicSeenIds = new HashSet<>();
+            repos = new ArrayList<>();
+            for (String slug : topicSlugs) {
+                multiTopicNextPage.put(slug, 1);
+            }
+        }
         final String sortField = StringUtils.isBlank(sort) ? "stars" : sort;
 
-        List<Observable<ArrayList<Repository>>> sources = new ArrayList<>();
-        for (final String slug : topicSlugs) {
-            sources.add(getSearchService().searchRepos("topic:" + slug, sortField, "desc", 1)
+        List<String> activeTopics = new ArrayList<>();
+        for (String slug : topicSlugs) {
+            if (!multiTopicExhausted.contains(slug)) activeTopics.add(slug);
+        }
+        if (activeTopics.isEmpty()) {
+            mView.hideLoading();
+            mView.showRepositories(repos);
+            mView.setCanLoadMore(false);
+            return;
+        }
+
+        List<Observable<TopicPage>> sources = new ArrayList<>();
+        for (final String slug : activeTopics) {
+            final int page = multiTopicNextPage.get(slug);
+            sources.add(getSearchService().searchRepos("topic:" + slug, sortField, "desc", page)
                     .map(response -> {
                         ArrayList<Repository> list = new ArrayList<>();
                         if (response.isSuccessful() && response.body() != null) {
                             list.addAll(response.body().getItems());
                         }
-                        return list;
+                        return new TopicPage(slug, list);
                     })
-                    .onErrorReturn(throwable -> new ArrayList<>()));
+                    .onErrorReturn(throwable -> new TopicPage(slug, new ArrayList<>())));
         }
 
         Observable.zip(sources, results -> {
-            java.util.LinkedHashMap<Integer, Repository> merged = new java.util.LinkedHashMap<>();
+            ArrayList<TopicPage> pages = new ArrayList<>();
             for (Object result : results) {
-                //noinspection unchecked
-                ArrayList<Repository> list = (ArrayList<Repository>) result;
-                for (Repository repository : list) {
-                    merged.put(repository.getId(), repository);
+                pages.add((TopicPage) result);
+            }
+            return pages;
+        })
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(pages -> {
+            if (mView == null) return;
+            for (TopicPage page : pages) {
+                multiTopicNextPage.put(page.topicSlug, multiTopicNextPage.get(page.topicSlug) + 1);
+                if (page.items.size() < SEARCH_PAGE_SIZE) {
+                    multiTopicExhausted.add(page.topicSlug);
+                }
+                for (Repository repository : page.items) {
+                    if (multiTopicSeenIds.add(repository.getId())) {
+                        repos.add(repository);
+                    }
                 }
             }
-            ArrayList<Repository> combined = new ArrayList<>(merged.values());
-            java.util.Collections.sort(combined, (a, b) -> {
+            Collections.sort(repos, (a, b) -> {
                 if ("updated".equals(sortField)) {
-                    java.util.Date dateA = a.getUpdatedAt();
-                    java.util.Date dateB = b.getUpdatedAt();
+                    Date dateA = a.getUpdatedAt();
+                    Date dateB = b.getUpdatedAt();
                     if (dateA == null || dateB == null) return 0;
                     return dateB.compareTo(dateA);
                 }
                 return Integer.compare(b.getStargazersCount(), a.getStargazersCount());
             });
-            return combined;
-        })
-        .subscribeOn(Schedulers.io())
-        .observeOn(AndroidSchedulers.mainThread())
-        .subscribe(combined -> {
-            if (mView == null) return;
-            repos = combined;
             mView.hideLoading();
             mView.showRepositories(repos);
-            mView.setCanLoadMore(false);
+            mView.setCanLoadMore(multiTopicExhausted.size() < topicSlugs.size());
         }, error -> {
             if (mView == null) return;
             mView.hideLoading();
