@@ -143,22 +143,25 @@ public class IssuePresenter extends BasePagerPresenter<IIssuesContract.View>
         if(!StringUtils.isBlankList(issues)){
             mView.showErrorToast(getErrorTip(error));
         } else if(error instanceof HttpPageNoFoundError){
-            mView.showIssues(new ArrayList<Issue>());
+            mView.showIssues(new ArrayList<Issue>(), 0);
         }else{
             mView.showLoadError(getErrorTip(error));
         }
     }
 
     private void handleSuccess(ArrayList<Issue> resultIssues, boolean isReload, boolean readCacheFirst){
+        int appendedCount;
         if (isReload || issues == null || readCacheFirst) {
             issues = resultIssues;
+            appendedCount = 0;
         } else {
+            appendedCount = resultIssues.size();
             issues.addAll(resultIssues);
         }
         if (resultIssues.size() == 0 && issues.size() != 0) {
             mView.setCanLoadMore(false);
         } else {
-            mView.showIssues(issues);
+            mView.showIssues(issues, appendedCount);
         }
     }
 

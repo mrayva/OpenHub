@@ -55,9 +55,13 @@ public class CommitsFragment extends ListFragment<CommitsPresenter, CommitAdapte
     }
 
     @Override
-    public void showCommits(ArrayList<RepoCommit> commits) {
+    public void showCommits(ArrayList<RepoCommit> commits, int appendedCount) {
         adapter.setData(commits);
-        postNotifyDataSetChanged();
+        if (appendedCount > 0) {
+            postNotifyItemRangeInserted(commits.size() - appendedCount, appendedCount);
+        } else {
+            postNotifyDataSetChanged();
+        }
     }
 
     @Override

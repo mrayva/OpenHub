@@ -18,7 +18,13 @@ import java.util.ArrayList;
 public interface ICommitsContract {
 
     interface View extends IBaseContract.View, IBasePagerContract.View, IBaseListContract.View {
-        void showCommits(ArrayList<RepoCommit> commits);
+        /**
+         * @param appendedCount 0 means commits is a fresh replacement (full
+         *                      rebind); >0 means the last appendedCount items
+         *                      were appended in place at the end of an
+         *                      otherwise-unchanged list.
+         */
+        void showCommits(ArrayList<RepoCommit> commits, int appendedCount);
     }
 
     interface Presenter extends IBasePagerContract.Presenter<ICommitsContract.View>{

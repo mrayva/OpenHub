@@ -15,7 +15,13 @@ import java.util.ArrayList;
 public interface IIssuesContract {
 
     interface View extends IBaseContract.View, IBasePagerContract.View, IBaseListContract.View{
-        void showIssues(ArrayList<Issue> issues);
+        /**
+         * @param appendedCount 0 means issues is a fresh replacement (full
+         *                      rebind); >0 means the last appendedCount items
+         *                      were appended in place at the end of an
+         *                      otherwise-unchanged list.
+         */
+        void showIssues(ArrayList<Issue> issues, int appendedCount);
     }
 
     interface Presenter extends IBasePagerContract.Presenter<IIssuesContract.View>{

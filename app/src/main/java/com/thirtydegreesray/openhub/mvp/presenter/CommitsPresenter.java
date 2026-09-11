@@ -61,7 +61,7 @@ public class CommitsPresenter extends BasePagerPresenter<ICommitsContract.View>
                 if(!StringUtils.isBlankList(commits)){
                     mView.showErrorToast(getErrorTip(error));
                 } else if(error instanceof HttpPageNoFoundError){
-                    mView.showCommits(new ArrayList<RepoCommit>());
+                    mView.showCommits(new ArrayList<RepoCommit>(), 0);
                 }else{
                     mView.showLoadError(getErrorTip(error));
                 }
@@ -70,15 +70,18 @@ public class CommitsPresenter extends BasePagerPresenter<ICommitsContract.View>
             @Override
             public void onSuccess(HttpResponse<ArrayList<RepoCommit>> response) {
                 mView.hideLoading();
+                int appendedCount;
                 if(commits == null || isReload || readCacheFirst){
                     commits = response.body();
+                    appendedCount = 0;
                 } else {
+                    appendedCount = response.body().size();
                     commits.addAll(response.body());
                 }
                 if(response.body().size() == 0 && commits.size() != 0){
                     mView.setCanLoadMore(false);
                 } else {
-                    mView.showCommits(commits);
+                    mView.showCommits(commits, appendedCount);
                 }
             }
         };
@@ -97,7 +100,7 @@ public class CommitsPresenter extends BasePagerPresenter<ICommitsContract.View>
             public void onError(Throwable error) {
                 mView.hideLoading();
                 if(error instanceof HttpPageNoFoundError){
-                    mView.showCommits(new ArrayList<RepoCommit>());
+                    mView.showCommits(new ArrayList<RepoCommit>(), 0);
                 }else{
                     mView.showLoadError(getErrorTip(error));
                 }
@@ -107,7 +110,7 @@ public class CommitsPresenter extends BasePagerPresenter<ICommitsContract.View>
             public void onSuccess(HttpResponse<CommitsComparison> response) {
                 mView.hideLoading();
                 commits = response.body().getCommits();
-                mView.showCommits(commits);
+                mView.showCommits(commits, 0);
             }
         };
         generalRxHttpExecute(new IObservableCreator<CommitsComparison>() {

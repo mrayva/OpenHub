@@ -77,9 +77,13 @@ public class IssuesFragment extends ListFragment<IssuePresenter, IssuesAdapter>
     }
 
     @Override
-    public void showIssues(ArrayList<Issue> issues) {
+    public void showIssues(ArrayList<Issue> issues, int appendedCount) {
         adapter.setData(issues);
-        postNotifyDataSetChanged();
+        if (appendedCount > 0) {
+            postNotifyItemRangeInserted(issues.size() - appendedCount, appendedCount);
+        } else {
+            postNotifyDataSetChanged();
+        }
     }
 
     @Override
