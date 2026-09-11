@@ -69,6 +69,8 @@ public class RepositoriesAdapter extends BaseAdapter<RepositoriesAdapter.ViewHol
         @BindView(R2.id.since_star_lay) LinearLayout sinceStarLay;
         @BindView(R2.id.owner_lay) LinearLayout ownerLay;
         @BindView(R2.id.fork_mark) View forkMark;
+        @BindView(R2.id.topics_lay) LinearLayout topicsLay;
+        @BindView(R2.id.tv_topics) TextView tvTopics;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -138,5 +140,12 @@ public class RepositoriesAdapter extends BaseAdapter<RepositoriesAdapter.ViewHol
         }
 
         holder.forkMark.setVisibility(repository.isFork() ? View.VISIBLE : View.GONE);
+
+        if(repository.getTopics() == null || repository.getTopics().isEmpty()){
+            holder.topicsLay.setVisibility(View.GONE);
+        } else {
+            holder.topicsLay.setVisibility(View.VISIBLE);
+            holder.tvTopics.setText(android.text.TextUtils.join(", ", repository.getTopics()));
+        }
     }
 }

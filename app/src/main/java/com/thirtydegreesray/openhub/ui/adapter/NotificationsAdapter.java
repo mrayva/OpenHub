@@ -83,6 +83,12 @@ public class NotificationsAdapter extends BaseAdapter<BaseViewHolder,
             RepoViewHolder holder = (RepoViewHolder) viewHolder;
             Repository model = data.get(position).getM1();
             holder.repoName.setText(model.getFullName());
+            if(StringUtils.isBlank(model.getDescription())){
+                holder.repoDescription.setVisibility(View.GONE);
+            } else {
+                holder.repoDescription.setVisibility(View.VISIBLE);
+                holder.repoDescription.setText(model.getDescription());
+            }
             GlideApp.with(fragment)
                     .load(model.getOwner().getAvatarUrl())
                     .onlyRetrieveFromCache(!PrefUtils.isLoadImageEnable())
@@ -137,6 +143,7 @@ public class NotificationsAdapter extends BaseAdapter<BaseViewHolder,
 
         @BindView(R2.id.user_avatar) CircleImageView userAvatar;
         @BindView(R2.id.repo_name) TextView repoName;
+        @BindView(R2.id.repo_description) TextView repoDescription;
         @BindView(R2.id.mark_as_read_bn) ToastAbleImageButton markAsReadBn;
 
         public RepoViewHolder(@NonNull View itemView) {

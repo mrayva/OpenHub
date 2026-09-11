@@ -27,6 +27,7 @@ public class Repository implements Parcelable {
     private String description;
     private String language;
     private User owner;
+    private java.util.List<String> topics;
 
     @SerializedName("default_branch") private String defaultBranch ;
 
@@ -148,6 +149,14 @@ public class Repository implements Parcelable {
 
     public void setLanguage(String language) {
         this.language = language;
+    }
+
+    public java.util.List<String> getTopics() {
+        return topics;
+    }
+
+    public void setTopics(java.util.List<String> topics) {
+        this.topics = topics;
     }
 
     public User getOwner() {
@@ -389,6 +398,7 @@ public class Repository implements Parcelable {
         dest.writeByte(this.hasPages ? (byte) 1 : (byte) 0);
         dest.writeInt(this.sinceStargazersCount);
         dest.writeInt(this.since == null ? -1 : this.since.ordinal());
+        dest.writeStringList(this.topics);
 
     }
 

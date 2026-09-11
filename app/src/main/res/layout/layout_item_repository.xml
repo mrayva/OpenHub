@@ -4,6 +4,7 @@
 <com.google.android.material.card.MaterialCardView
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:layout_marginLeft="@dimen/card_view_horizontal_margin"
@@ -185,6 +186,33 @@
                         android:layout_marginEnd="@dimen/spacing_mini"/>
                 </LinearLayout>
 
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/topics_lay"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:paddingTop="@dimen/spacing_mini"
+                android:visibility="gone"
+                tools:visibility="visible">
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    app:srcCompat="@drawable/ic_topic"
+                    android:tint="?android:textColorSecondary"/>
+                <TextView
+                    android:id="@+id/tv_topics"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:textSize="@dimen/text_mini"
+                    android:textColor="?android:textColorSecondary"
+                    android:maxLines="1"
+                    android:ellipsize="end"
+                    android:layout_marginStart="@dimen/spacing_mini"
+                    tools:text="android, github, java, material-design"/>
             </LinearLayout>
         </LinearLayout>
 
