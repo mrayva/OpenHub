@@ -427,6 +427,7 @@
 
     <string name="topic">Topic</string>
     <string name="topics">Featured topics</string>
+    <string name="repo_topics_tab">Topics</string>
     <string name="topics_tip">Browse the top used topics on GitHub.</string>
     <string name="no_topics">No topics</string>
 
