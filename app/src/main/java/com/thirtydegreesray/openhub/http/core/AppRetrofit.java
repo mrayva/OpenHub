@@ -53,6 +53,8 @@ public enum  AppRetrofit {
 
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .connectTimeout(timeOut, TimeUnit.MILLISECONDS)
+                .readTimeout(timeOut, TimeUnit.MILLISECONDS)
+                .writeTimeout(timeOut, TimeUnit.MILLISECONDS)
                 .addInterceptor(new BaseInterceptor())
                 .addNetworkInterceptor(new NetworkBaseInterceptor())
                 .cache(cache)
