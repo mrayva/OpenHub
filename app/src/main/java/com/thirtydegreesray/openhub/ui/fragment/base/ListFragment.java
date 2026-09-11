@@ -64,6 +64,11 @@ public abstract class ListFragment <P extends IBaseContract.Presenter, A extends
         refreshLayout.setColorSchemeColors(ViewUtils.getRefreshLayoutColors(getContext()));
 
         recyclerView.setLayoutManager(new CatchableLinearLayoutManager(getActivity()));
+        // Every ListFragment subclass's recycler_view is declared
+        // match_parent/match_parent (fragment_list.xml / fragment_list_with_search.xml),
+        // so its own size never depends on adapter content - safe to skip
+        // the layout pass RecyclerView would otherwise run to check.
+        recyclerView.setHasFixedSize(true);
         adapter.setOnItemLongClickListener(this);
         adapter.setOnItemClickListener(this);
         recyclerView.setAdapter(adapter);

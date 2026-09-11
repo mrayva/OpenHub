@@ -155,32 +155,36 @@ public class ProfilePresenter extends BasePresenter<IProfileContract.View>
     @Override
     public void bookmark(boolean bookmark) {
         bookmarked = bookmark;
-        Bookmark bookmarkModel = daoSession.getBookmarkDao().queryBuilder()
-                .where(BookmarkDao.Properties.UserId.eq(user.getLogin()))
-                .unique();
-        if(bookmark && bookmarkModel == null){
-            bookmarkModel = new Bookmark(UUID.randomUUID().toString());
-            bookmarkModel.setType("user");
-            bookmarkModel.setUserId(user.getLogin());
-            bookmarkModel.setMarkTime(new Date());
-            daoSession.getBookmarkDao().insert(bookmarkModel);
-        } else if(!bookmark && bookmarkModel != null){
-            daoSession.getBookmarkDao().delete(bookmarkModel);
-        }
+        final User userAtBookmarkTime = user;
+        rxDBExecute(() -> {
+            Bookmark bookmarkModel = daoSession.getBookmarkDao().queryBuilder()
+                    .where(BookmarkDao.Properties.UserId.eq(userAtBookmarkTime.getLogin()))
+                    .unique();
+            if(bookmark && bookmarkModel == null){
+                bookmarkModel = new Bookmark(UUID.randomUUID().toString());
+                bookmarkModel.setType("user");
+                bookmarkModel.setUserId(userAtBookmarkTime.getLogin());
+                bookmarkModel.setMarkTime(new Date());
+                daoSession.getBookmarkDao().insert(bookmarkModel);
+            } else if(!bookmark && bookmarkModel != null){
+                daoSession.getBookmarkDao().delete(bookmarkModel);
+            }
+        });
     }
 
     private void saveTrace(){
-        daoSession.runInTx(() -> {
+        final User userAtTraceTime = user;
+        rxDBExecute(() -> {
 
             if(!isTraceSaved){
                 Trace trace = daoSession.getTraceDao().queryBuilder()
-                        .where(TraceDao.Properties.UserId.eq(user.getLogin()))
+                        .where(TraceDao.Properties.UserId.eq(userAtTraceTime.getLogin()))
                         .unique();
 
                 if(trace == null){
                     trace = new Trace(UUID.randomUUID().toString());
                     trace.setType("user");
-                    trace.setUserId(user.getLogin());
+                    trace.setUserId(userAtTraceTime.getLogin());
                     Date curDate = new Date();
                     trace.setStartTime(curDate);
                     trace.setLatestTime(curDate);
@@ -193,8 +197,8 @@ public class ProfilePresenter extends BasePresenter<IProfileContract.View>
                 }
             }
 
-            LocalUser localUser = daoSession.getLocalUserDao().load(user.getLogin());
-            LocalUser updateUser = user.toLocalUser();
+            LocalUser localUser = daoSession.getLocalUserDao().load(userAtTraceTime.getLogin());
+            LocalUser updateUser = userAtTraceTime.toLocalUser();
             if(localUser == null){
                 daoSession.getLocalUserDao().insert(updateUser);
             } else {

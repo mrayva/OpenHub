@@ -51,6 +51,7 @@ android {
     buildTypes {
         release {
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             // No dedicated release keystore exists for this fork (the
             // committed OpenHubPublicSign.jks is an orphaned leftover from

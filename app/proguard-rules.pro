@@ -29,7 +29,6 @@
 -dontwarn
 -verbose
 
--dontoptimize
 -dontpreverify
 
 -ignorewarnings
