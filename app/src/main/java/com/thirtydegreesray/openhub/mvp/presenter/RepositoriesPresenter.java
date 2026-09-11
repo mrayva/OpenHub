@@ -14,6 +14,8 @@ import com.thirtydegreesray.openhub.common.Event;
 import com.thirtydegreesray.openhub.dao.Bookmark;
 import com.thirtydegreesray.openhub.dao.BookmarkDao;
 import com.thirtydegreesray.openhub.dao.DaoSession;
+import com.thirtydegreesray.openhub.dao.IgnoredRepo;
+import com.thirtydegreesray.openhub.dao.IgnoredRepoDao;
 import com.thirtydegreesray.openhub.dao.LocalRepo;
 import com.thirtydegreesray.openhub.dao.Trace;
 import com.thirtydegreesray.openhub.dao.TraceDao;
@@ -32,6 +34,8 @@ import com.thirtydegreesray.openhub.mvp.model.filter.RepositoriesFilter;
 import com.thirtydegreesray.openhub.mvp.model.filter.TrendingSince;
 import com.thirtydegreesray.openhub.mvp.presenter.base.BasePagerPresenter;
 import com.thirtydegreesray.openhub.ui.fragment.RepositoriesFragment;
+import com.thirtydegreesray.openhub.util.IgnoredRepoHelper;
+import com.thirtydegreesray.openhub.util.PrefUtils;
 import com.thirtydegreesray.openhub.util.StringUtils;
 
 import org.greenrobot.eventbus.Subscribe;
@@ -87,6 +91,14 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
     @AutoAccess ArrayList<String> topicSlugs;
     @AutoAccess String sort;
 
+    /**
+     * True only for Trending and Created-tab SEARCH fragments (set by
+     * RepositoriesFragment's factories) - gates ignore-list filtering/swipe/
+     * dimming so general Search and every other repo list (Starred, Owned,
+     * Forks, Bookmarks, Trace, Topic search) stay unaffected.
+     */
+    @AutoAccess boolean ignoreListEligible;
+
     private static final int SEARCH_PAGE_SIZE = 30;
 
     // Per-topic pagination state for searchMultiTopics() - not @AutoAccess,
@@ -121,6 +133,10 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         }
         if (RepositoriesFragment.RepositoriesType.BOOKMARK.equals(type)) {
             loadBookmarks(1);
+            return;
+        }
+        if (RepositoriesFragment.RepositoriesType.IGNORED.equals(type)) {
+            loadIgnored(1);
             return;
         }
         if (RepositoriesFragment.RepositoriesType.COLLECTION.equals(type)) {
@@ -161,6 +177,10 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         }
         if (RepositoriesFragment.RepositoriesType.BOOKMARK.equals(type)) {
             loadBookmarks(page);
+            return;
+        }
+        if (RepositoriesFragment.RepositoriesType.IGNORED.equals(type)) {
+            loadIgnored(page);
             return;
         }
         if (RepositoriesFragment.RepositoriesType.COLLECTION.equals(type)) {
@@ -262,13 +282,18 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     @Override
                     public void onSuccess(@NonNull HttpResponse<SearchResult<Repository>> response) {
                         mView.hideLoading();
+                        ArrayList<Repository> items = response.body().getItems();
+                        int rawCount = items.size();
+                        if (ignoreListEligible && PrefUtils.isIgnoreListApplied()) {
+                            items = filterIgnored(items);
+                        }
                         int appendedCount;
                         if (repos == null || page == 1) {
-                            repos = response.body().getItems();
+                            repos = items;
                             appendedCount = 0;
                         } else {
-                            appendedCount = response.body().getItems().size();
-                            repos.addAll(response.body().getItems());
+                            appendedCount = items.size();
+                            repos.addAll(items);
                         }
                         // GitHub's search API has no "created" sort value (it's
                         // silently ignored - confirmed against the live API,
@@ -284,7 +309,19 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                             // a pure append anymore.
                             appendedCount = 0;
                         }
-                        if (response.body().getItems().size() == 0 && repos.size() != 0) {
+                        if (ignoreListEligible) {
+                            // Filtering out ignored repos can shrink a full
+                            // raw page down to far fewer displayed items, so
+                            // ListFragment's auto-judge (itemCount % pageSize)
+                            // would wrongly conclude "not a full page" and
+                            // disable further loading - decide canLoadMore
+                            // from the raw (pre-filter) fetch size instead.
+                            // RepositoriesFragment disables the auto-judge
+                            // for ignoreListEligible fragments to make this
+                            // the only source of truth.
+                            mView.setCanLoadMore(rawCount == SEARCH_PAGE_SIZE);
+                            mView.showRepositories(repos, appendedCount);
+                        } else if (rawCount == 0 && repos.size() != 0) {
                             mView.setCanLoadMore(false);
                         } else {
                             mView.showRepositories(repos, appendedCount);
@@ -325,6 +362,10 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
 
     public RepositoriesFragment.RepositoriesType getType() {
         return type;
+    }
+
+    public boolean isIgnoreListEligible() {
+        return ignoreListEligible;
     }
 
     public RepositoriesFilter getFilter() {
@@ -410,6 +451,71 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             mView.hideLoading();
             mView.showLoadError(getErrorTip(error));
         });
+    }
+
+    private void loadIgnored(final int page) {
+        mView.showLoading();
+        Observable.fromCallable(() -> {
+            List<IgnoredRepo> ignoredRepos = daoSession.getIgnoredRepoDao().queryBuilder()
+                    .orderDesc(IgnoredRepoDao.Properties.IgnoredAt)
+                    .offset((page - 1) * 30)
+                    .limit(page * 30)
+                    .list();
+
+            ArrayList<Repository> queryRepos = new ArrayList<>();
+            for (IgnoredRepo ignoredRepo : ignoredRepos) {
+                queryRepos.add(generateFromIgnoredRepo(ignoredRepo));
+            }
+            return queryRepos;
+        })
+        .subscribeOn(Schedulers.io())
+        .observeOn(AndroidSchedulers.mainThread())
+        .subscribe(queryRepos -> {
+            if (mView == null) return;
+            showQueryRepos(queryRepos, page);
+        }, error -> {
+            if (mView == null) return;
+            mView.hideLoading();
+            mView.showLoadError(getErrorTip(error));
+        });
+    }
+
+    /**
+     * IgnoredRepo is self-contained (denormalized display fields, no
+     * LocalRepo join) since it's keyed by fullName, not a numeric repo id -
+     * see IgnoredRepo's class comment for why.
+     */
+    private Repository generateFromIgnoredRepo(IgnoredRepo ignoredRepo) {
+        Repository repository = new Repository();
+        repository.setFullName(ignoredRepo.getFullName());
+        repository.setName(ignoredRepo.getName());
+        repository.setDescription(ignoredRepo.getDescription());
+        repository.setLanguage(ignoredRepo.getLanguage());
+        if (ignoredRepo.getStargazersCount() != null) {
+            repository.setStargazersCount(ignoredRepo.getStargazersCount());
+        }
+        if (ignoredRepo.getForksCount() != null) {
+            repository.setForksCount(ignoredRepo.getForksCount());
+        }
+        User owner = new User();
+        owner.setLogin(ignoredRepo.getOwnerLogin());
+        owner.setAvatarUrl(ignoredRepo.getOwnerAvatarUrl());
+        repository.setOwner(owner);
+        return repository;
+    }
+
+    /**
+     * Applied to a freshly-fetched batch before it's merged into repos/shown
+     * - only called when ignoreListEligible && PrefUtils.isIgnoreListApplied().
+     */
+    private ArrayList<Repository> filterIgnored(ArrayList<Repository> repositories) {
+        ArrayList<Repository> filtered = new ArrayList<>();
+        for (Repository repository : repositories) {
+            if (!IgnoredRepoHelper.isIgnored(repository.getFullName())) {
+                filtered.add(repository);
+            }
+        }
+        return filtered;
     }
 
     private void showQueryRepos(ArrayList<Repository> queryRepos, int page){
@@ -754,6 +860,9 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                         repos = null;
                     }
 
+                    if (repos != null && ignoreListEligible && PrefUtils.isIgnoreListApplied()) {
+                        repos = filterIgnored(repos);
+                    }
                     return repos;
                 })
                 .subscribeOn(Schedulers.io())

@@ -54,6 +54,7 @@ public class PrefUtils {
     public final static String LOGOUT = "logout";
     public final static String CODE_WRAP = "codeWrap";
     public final static String CUSTOM_TABS_ENABLE = "customTabsEnable";
+    public final static String IGNORE_LIST_APPLIED = "ignoreListApplied";
 
 
     public final static String POP_TIMES = "popTimes";
@@ -132,6 +133,11 @@ public class PrefUtils {
 
     public static boolean isCodeWrap(){
         return getDefaultSp(AppApplication.get()).getBoolean(CODE_WRAP, false);
+    }
+
+    /** Shared by both Trending and Created - toggling it in either applies to both. */
+    public static boolean isIgnoreListApplied(){
+        return getDefaultSp(AppApplication.get()).getBoolean(IGNORE_LIST_APPLIED, false);
     }
 
     public static boolean isDoubleClickTitleTipAble(){

@@ -20,6 +20,7 @@ import com.thirtydegreesray.openhub.ui.activity.ProfileActivity;
 import com.thirtydegreesray.openhub.ui.adapter.base.BaseAdapter;
 import com.thirtydegreesray.openhub.ui.adapter.base.BaseViewHolder;
 import com.thirtydegreesray.openhub.ui.fragment.base.BaseFragment;
+import com.thirtydegreesray.openhub.util.IgnoredRepoHelper;
 import com.thirtydegreesray.openhub.util.LanguageColorsHelper;
 import com.thirtydegreesray.openhub.util.PrefUtils;
 import com.thirtydegreesray.openhub.util.StringUtils;
@@ -38,9 +39,19 @@ import butterknife.OnClick;
 
 public class RepositoriesAdapter extends BaseAdapter<RepositoriesAdapter.ViewHolder, Repository> {
 
+    // Set by RepositoriesFragment only for Trending/Created (ignoreListEligible)
+    // rows - dims a row still visible because the ignore-list toggle is off.
+    // Every other screen this adapter is shared with (Bookmarks, Trace,
+    // Starred, etc.) leaves this false and is unaffected.
+    private boolean showIgnoredState = false;
+
     @Inject
     public RepositoriesAdapter(Context context, BaseFragment fragment){
         super(context, fragment);
+    }
+
+    public void setShowIgnoredState(boolean showIgnoredState) {
+        this.showIgnoredState = showIgnoredState;
     }
 
     @Override
@@ -147,5 +158,8 @@ public class RepositoriesAdapter extends BaseAdapter<RepositoriesAdapter.ViewHol
             holder.topicsLay.setVisibility(View.VISIBLE);
             holder.tvTopics.setText(android.text.TextUtils.join(", ", repository.getTopics()));
         }
+
+        holder.itemView.setAlpha(
+                showIgnoredState && IgnoredRepoHelper.isIgnored(repository.getFullName()) ? 0.5f : 1f);
     }
 }

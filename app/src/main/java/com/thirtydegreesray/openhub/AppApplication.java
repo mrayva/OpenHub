@@ -19,6 +19,7 @@ import com.thirtydegreesray.openhub.inject.component.DaggerAppComponent;
 import com.thirtydegreesray.openhub.inject.module.AppModule;
 import com.thirtydegreesray.openhub.service.NetBroadcastReceiver;
 import com.thirtydegreesray.openhub.util.AppUtils;
+import com.thirtydegreesray.openhub.util.IgnoredRepoHelper;
 import com.thirtydegreesray.openhub.util.NetHelper;
 
 /**
@@ -53,6 +54,7 @@ public class AppApplication extends Application {
                 .appModule(new AppModule(this))
                 .build();
         initNetwork();
+        IgnoredRepoHelper.preload();
         startTime = System.currentTimeMillis();
         Logger.t(TAG).i("application ok:" + (System.currentTimeMillis() - startTime));
 

@@ -5,7 +5,10 @@ package com.thirtydegreesray.openhub.ui.fragment;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.SimpleItemAnimator;
 import com.google.android.material.navigation.NavigationView;
+import com.google.android.material.snackbar.Snackbar;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -27,9 +30,13 @@ import com.thirtydegreesray.openhub.mvp.presenter.RepositoriesPresenter;
 import com.thirtydegreesray.openhub.ui.activity.RepositoryActivity;
 import com.thirtydegreesray.openhub.ui.activity.TrendingActivity;
 import com.thirtydegreesray.openhub.ui.adapter.RepositoriesAdapter;
+import com.thirtydegreesray.openhub.ui.adapter.base.IgnoreSwipeCallback;
+import com.thirtydegreesray.openhub.ui.adapter.base.ItemTouchHelperCallback;
 import com.thirtydegreesray.openhub.ui.fragment.base.ListFragment;
 import com.thirtydegreesray.openhub.ui.fragment.base.OnDrawerSelectedListener;
 import com.thirtydegreesray.openhub.util.BundleHelper;
+import com.thirtydegreesray.openhub.util.IgnoredRepoHelper;
+import com.thirtydegreesray.openhub.util.PrefUtils;
 
 import java.util.ArrayList;
 
@@ -41,10 +48,12 @@ import java.util.ArrayList;
 
 public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, RepositoriesAdapter>
             implements IRepositoriesContract.View, OnDrawerSelectedListener,
-        TrendingActivity.LanguageUpdateListener{
+        TrendingActivity.LanguageUpdateListener,
+        ItemTouchHelperCallback.ItemGestureListener,
+        IgnoreSwipeCallback.Listener{
 
     public enum RepositoriesType{
-        OWNED, PUBLIC, STARRED, TRENDING, SEARCH, FORKS, TRACE, BOOKMARK, COLLECTION, TOPIC, TOPICS_SEARCH
+        OWNED, PUBLIC, STARRED, TRENDING, SEARCH, FORKS, TRACE, BOOKMARK, IGNORED, COLLECTION, TOPIC, TOPICS_SEARCH
     }
 
     public static RepositoriesFragment create(@NonNull RepositoriesType type,
@@ -108,6 +117,7 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
                         .put("type", RepositoriesType.SEARCH)
                         .put("searchModel", searchModel)
                         .put("since", since)
+                        .put("ignoreListEligible", true)
                         .build()
         );
         return fragment;
@@ -119,6 +129,7 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
                 BundleHelper.builder()
                         .put("type", RepositoriesType.TRENDING)
                         .put("since", since)
+                        .put("ignoreListEligible", true)
                         .build()
         );
         return fragment;
@@ -157,6 +168,12 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
         return fragment;
     }
 
+    public static RepositoriesFragment createForIgnored(){
+        RepositoriesFragment fragment = new RepositoriesFragment();
+        fragment.setArguments(BundleHelper.builder().put("type", RepositoriesType.IGNORED).build());
+        return fragment;
+    }
+
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -191,6 +208,27 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
     protected void initFragment(Bundle savedInstanceState){
         super.initFragment(savedInstanceState);
         setLoadMoreEnable(!RepositoriesType.COLLECTION.equals(mPresenter.getType()));
+        if (mPresenter.isIgnoreListEligible()) {
+            adapter.setShowIgnoredState(true);
+            // Filtering can shrink a full raw page down to far fewer visible
+            // items - RepositoriesPresenter decides canLoadMore explicitly
+            // from the raw fetch size instead (see searchRepos()'s comment).
+            setAutoJudgeCanLoadMoreEnable(false);
+            // Default change-animation cross-fades old/new holder alpha and
+            // resets itemView's alpha to 1 once it "finishes" (instant, since
+            // it's the same holder) - stomping the setAlpha(0.5f) dimming
+            // RepositoriesAdapter just applied in the very onBindViewHolder
+            // call this notifyItemChanged() triggered.
+            if (recyclerView.getItemAnimator() instanceof SimpleItemAnimator) {
+                ((SimpleItemAnimator) recyclerView.getItemAnimator()).setSupportsChangeAnimations(false);
+            }
+            IgnoreSwipeCallback callback = new IgnoreSwipeCallback(getContext(), adapter, this);
+            new ItemTouchHelper(callback).attachToRecyclerView(recyclerView);
+        } else if (RepositoriesType.IGNORED.equals(mPresenter.getType())) {
+            ItemTouchHelperCallback callback = new ItemTouchHelperCallback(
+                    0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT, this);
+            new ItemTouchHelper(callback).attachToRecyclerView(recyclerView);
+        }
     }
 
     @Override
@@ -203,6 +241,9 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
         if(RepositoriesType.TRENDING.equals(mPresenter.getType())){
             return String.format(getString(R.string.no_trending_repos), mPresenter.getLanguage().getName());
         }
+        if(RepositoriesType.IGNORED.equals(mPresenter.getType())){
+            return getString(R.string.no_ignored_repos);
+        }
         return getString(R.string.no_repository);
     }
 
@@ -212,6 +253,7 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
         if(RepositoriesType.TRENDING.equals(mPresenter.getType())
                 || RepositoriesType.TRACE.equals(mPresenter.getType())
                 || RepositoriesType.BOOKMARK.equals(mPresenter.getType())
+                || RepositoriesType.IGNORED.equals(mPresenter.getType())
                 || RepositoriesType.COLLECTION.equals(mPresenter.getType())){
             RepositoryActivity.show(getActivity(), adapter.getData().get(position).getOwner().getLogin(),
                     adapter.getData().get(position).getName());
@@ -301,6 +343,80 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
             getArguments().putStringArrayList("topicSlugs", topicSlugs);
             getArguments().putString("sort", sort);
         }
+    }
+
+    /**
+     * Pushed by TrendingActivity/CreatedActivity when the shared ignore-list
+     * toggle flips - only Trending/Created-tab fragments react (ignoreListEligible).
+     */
+    public void onIgnoreListToggle() {
+        if(mPresenter != null && mPresenter.isIgnoreListEligible()){
+            mPresenter.setLoaded(false);
+            onRefresh();
+        }
+    }
+
+    @Override
+    public boolean onItemMoved(int fromPosition, int toPosition) {
+        return false;
+    }
+
+    /**
+     * Only reachable for RepositoriesType.IGNORED (the Manage Ignore List
+     * screen) - Trending/Created use IgnoreSwipeCallback.Listener instead,
+     * which distinguishes swipe direction.
+     */
+    @Override
+    public void onItemSwiped(int position, int direction) {
+        Repository repository = adapter.getData().get(position);
+        IgnoredRepoHelper.unignore(repository.getFullName());
+        adapter.getData().remove(position);
+        if (adapter.getData().size() == 0) {
+            postNotifyDataSetChanged();
+        } else {
+            adapter.notifyItemRemoved(position);
+        }
+        Snackbar.make(recyclerView, String.format(getString(R.string.repo_unignored), repository.getFullName()),
+                Snackbar.LENGTH_LONG)
+                .setAction(R.string.undo, v -> {
+                    IgnoredRepoHelper.ignore(repository);
+                    int insertPos = Math.min(position, adapter.getData().size());
+                    adapter.getData().add(insertPos, repository);
+                    adapter.notifyItemInserted(insertPos);
+                })
+                .show();
+    }
+
+    @Override
+    public void onSwipeToIgnore(int position) {
+        Repository repository = adapter.getData().get(position);
+        IgnoredRepoHelper.ignore(repository);
+        if (PrefUtils.isIgnoreListApplied()) {
+            adapter.getData().remove(position);
+            adapter.notifyItemRemoved(position);
+        } else {
+            adapter.notifyItemChanged(position);
+        }
+        Snackbar.make(recyclerView, String.format(getString(R.string.repo_ignored), repository.getFullName()),
+                Snackbar.LENGTH_LONG)
+                .setAction(R.string.undo, v -> {
+                    IgnoredRepoHelper.unignore(repository.getFullName());
+                    if (PrefUtils.isIgnoreListApplied()) {
+                        int insertPos = Math.min(position, adapter.getData().size());
+                        adapter.getData().add(insertPos, repository);
+                        adapter.notifyItemInserted(insertPos);
+                    } else {
+                        adapter.notifyItemChanged(position);
+                    }
+                })
+                .show();
+    }
+
+    @Override
+    public void onSwipeToUnignore(int position) {
+        Repository repository = adapter.getData().get(position);
+        IgnoredRepoHelper.unignore(repository.getFullName());
+        adapter.notifyItemChanged(position);
     }
 
 }

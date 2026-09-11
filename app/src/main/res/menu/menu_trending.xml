@@ -8,4 +8,15 @@
         app:showAsAction="always"
         android:icon="@drawable/ic_language_title"/>
 
+    <item
+        android:id="@+id/action_apply_ignore_list"
+        android:title="@string/apply_ignore_list"
+        android:checkable="true"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_manage_ignore_list"
+        android:title="@string/manage_ignore_list"
+        app:showAsAction="never"/>
+
 </app:menu>

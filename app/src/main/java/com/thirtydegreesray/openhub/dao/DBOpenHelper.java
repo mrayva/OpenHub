@@ -61,6 +61,8 @@ public class DBOpenHelper extends DaoMaster.DevOpenHelper {
             db.execSQL("CREATE INDEX IF NOT EXISTS IDX_TRACE_TYPE ON \"TRACE\" (\"TYPE\");");
             db.execSQL("CREATE INDEX IF NOT EXISTS IDX_TRACE_USER_ID ON \"TRACE\" (\"USER_ID\");");
             db.execSQL("CREATE INDEX IF NOT EXISTS IDX_TRACE_REPO_ID ON \"TRACE\" (\"REPO_ID\");");
+        } else if(oldVersion == 7 && newVersion == 8){
+            IgnoredRepoDao.createTable(db, true);
         } else {
             super.onUpgrade(db, oldVersion, newVersion);
         }
