@@ -121,7 +121,12 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             return;
         }
         if(RepositoriesFragment.RepositoriesType.TOPICS_SEARCH.equals(type)){
-            searchMultiTopics();
+            if (isSingleTopicSearch()) {
+                initSearchModelForTopicsSearch();
+                searchRepos(1);
+            } else {
+                searchMultiTopics();
+            }
             return;
         }
         loadRepositories(false, 1);
@@ -156,7 +161,12 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             return;
         }
         if(RepositoriesFragment.RepositoriesType.TOPICS_SEARCH.equals(type)){
-            searchMultiTopics();
+            if (isSingleTopicSearch()) {
+                initSearchModelForTopicsSearch();
+                searchRepos(page);
+            } else {
+                searchMultiTopics();
+            }
             return;
         }
         mView.showLoading();
@@ -344,6 +354,10 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         this.sort = sort;
     }
 
+    public ArrayList<String> getTopicSlugs() {
+        return topicSlugs;
+    }
+
     /**
      * GitHub's search API rejects OR between qualifiers ("logical operators
      * only apply to text, not to qualifiers" - confirmed against the live
@@ -526,6 +540,24 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             searchModel = new SearchModel(SearchModel.SearchType.Repository);
             searchModel.setQuery("topic:" + topic.getId());
         }
+    }
+
+    /**
+     * With exactly one topic selected, TOPICS_SEARCH is just a normal single
+     * search query - same shape as TOPIC - so it can use the real paginated
+     * searchRepos(page) instead of searchMultiTopics()'s page-1-only merge.
+     * Rebuilt on every call (not cached like initSearchModelForTopic()) since
+     * the topic or sort can change without recreating the presenter.
+     */
+    private boolean isSingleTopicSearch() {
+        return topicSlugs != null && topicSlugs.size() == 1;
+    }
+
+    private void initSearchModelForTopicsSearch(){
+        String sortField = StringUtils.isBlank(sort) ? "stars" : sort;
+        searchModel = new SearchModel(SearchModel.SearchType.Repository, "topic:" + topicSlugs.get(0))
+                .setSort(sortField)
+                .setDesc(true);
     }
 
     private void loadTrending(boolean isReload){
