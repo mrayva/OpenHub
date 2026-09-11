@@ -440,6 +440,7 @@
     <string name="topic_already_added">That topic is already in your list</string>
     <string name="sort_by_stars">Most stars</string>
     <string name="sort_by_updated">Recently updated</string>
+    <string name="sort_by_created">Recently added</string>
     <string name="topics_editor_tip">Tap a topic to include/exclude it from results, swipe to delete, or tap + to add a new one.</string>
 
     <string name="star_num_today">%s star today</string>

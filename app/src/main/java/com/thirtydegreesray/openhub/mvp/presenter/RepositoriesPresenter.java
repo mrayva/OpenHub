@@ -263,6 +263,16 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                         } else {
                             repos.addAll(response.body().getItems());
                         }
+                        // GitHub's search API has no "created" sort value (it's
+                        // silently ignored - confirmed against the live API,
+                        // both asc/desc order came back identical), unlike
+                        // stars/updated which it sorts natively. So for
+                        // "recently added", re-sort what we've fetched so far
+                        // client-side instead of trusting the API's order.
+                        if (RepositoriesFragment.RepositoriesType.TOPICS_SEARCH.equals(type)
+                                && "created".equals(sort)) {
+                            sortRepos(repos, sort);
+                        }
                         if (response.body().getItems().size() == 0 && repos.size() != 0) {
                             mView.setCanLoadMore(false);
                         } else {
@@ -474,15 +484,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     }
                 }
             }
-            Collections.sort(repos, (a, b) -> {
-                if ("updated".equals(sortField)) {
-                    Date dateA = a.getUpdatedAt();
-                    Date dateB = b.getUpdatedAt();
-                    if (dateA == null || dateB == null) return 0;
-                    return dateB.compareTo(dateA);
-                }
-                return Integer.compare(b.getStargazersCount(), a.getStargazersCount());
-            });
+            sortRepos(repos, sortField);
             mView.hideLoading();
             mView.showRepositories(repos);
             mView.setCanLoadMore(multiTopicExhausted.size() < topicSlugs.size());
@@ -605,8 +607,9 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
 
     /**
      * With exactly one topic selected, TOPICS_SEARCH is just a normal single
-     * search query - same shape as TOPIC - so it can use the real paginated
-     * searchRepos(page) instead of searchMultiTopics()'s page-1-only merge.
+     * search query - same shape as TOPIC - so it can use the shared
+     * searchRepos(page) path (with its own real per-request pagination)
+     * instead of searchMultiTopics()'s independent per-topic page tracking.
      * Rebuilt on every call (not cached like initSearchModelForTopic()) since
      * the topic or sort can change without recreating the presenter.
      */
@@ -619,6 +622,29 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         searchModel = new SearchModel(SearchModel.SearchType.Repository, "topic:" + topicSlugs.get(0))
                 .setSort(sortField)
                 .setDesc(true);
+    }
+
+    /**
+     * GitHub's search API only natively sorts by stars/forks/help-wanted-
+     * issues/updated - "created" is silently ignored (confirmed against the
+     * live API: asc and desc came back identical), so "recently added" has
+     * to be sorted client-side instead of trusting the API's order.
+     */
+    private void sortRepos(ArrayList<Repository> list, String sortField) {
+        Collections.sort(list, (a, b) -> {
+            if ("created".equals(sortField)) {
+                Date dateA = a.getCreatedAt();
+                Date dateB = b.getCreatedAt();
+                if (dateA == null || dateB == null) return 0;
+                return dateB.compareTo(dateA);
+            } else if ("updated".equals(sortField)) {
+                Date dateA = a.getUpdatedAt();
+                Date dateB = b.getUpdatedAt();
+                if (dateA == null || dateB == null) return 0;
+                return dateB.compareTo(dateA);
+            }
+            return Integer.compare(b.getStargazersCount(), a.getStargazersCount());
+        });
     }
 
     private void loadTrending(boolean isReload){

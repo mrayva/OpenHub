@@ -15,6 +15,9 @@
         <item
             android:id="@+id/action_sort_updated"
             android:title="@string/sort_by_updated"/>
+        <item
+            android:id="@+id/action_sort_created"
+            android:title="@string/sort_by_created"/>
     </group>
 
 </menu>

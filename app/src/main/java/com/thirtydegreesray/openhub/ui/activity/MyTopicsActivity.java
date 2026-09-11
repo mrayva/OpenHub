@@ -106,10 +106,15 @@ public class MyTopicsActivity extends PagerActivity<MyTopicsPresenter>
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_topics_search, menu);
-        MenuItem sortItem = "updated".equals(sort)
-                ? menu.findItem(R.id.action_sort_updated)
-                : menu.findItem(R.id.action_sort_stars);
-        sortItem.setChecked(true);
+        int sortItemId;
+        if ("updated".equals(sort)) {
+            sortItemId = R.id.action_sort_updated;
+        } else if ("created".equals(sort)) {
+            sortItemId = R.id.action_sort_created;
+        } else {
+            sortItemId = R.id.action_sort_stars;
+        }
+        menu.findItem(sortItemId).setChecked(true);
         return true;
     }
 
@@ -119,9 +124,16 @@ public class MyTopicsActivity extends PagerActivity<MyTopicsPresenter>
         if (id == R.id.action_manage_topics) {
             TopicsEditorActivity.show(getActivity(), MANAGE_TOPICS_REQUEST_CODE);
             return true;
-        } else if (id == R.id.action_sort_stars || id == R.id.action_sort_updated) {
+        } else if (id == R.id.action_sort_stars || id == R.id.action_sort_updated
+                || id == R.id.action_sort_created) {
             item.setChecked(true);
-            sort = id == R.id.action_sort_updated ? "updated" : "stars";
+            if (id == R.id.action_sort_updated) {
+                sort = "updated";
+            } else if (id == R.id.action_sort_created) {
+                sort = "created";
+            } else {
+                sort = "stars";
+            }
             PrefUtils.setTopicsSearchSort(sort);
             reloadTopicsSearch();
             return true;
