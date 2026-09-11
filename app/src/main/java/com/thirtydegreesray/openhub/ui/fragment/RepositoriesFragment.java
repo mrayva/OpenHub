@@ -164,9 +164,13 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
     }
 
     @Override
-    public void showRepositories(ArrayList<Repository> repositoryList) {
+    public void showRepositories(ArrayList<Repository> repositoryList, int appendedCount) {
         adapter.setData(repositoryList);
-        postNotifyDataSetChanged();
+        if (appendedCount > 0) {
+            postNotifyItemRangeInserted(repositoryList.size() - appendedCount, appendedCount);
+        } else {
+            postNotifyDataSetChanged();
+        }
     }
 
     @Override

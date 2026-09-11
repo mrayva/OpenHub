@@ -75,22 +75,13 @@ public abstract class ListFragment <P extends IBaseContract.Presenter, A extends
             @Override
             public void onChanged() {
                 super.onChanged();
-                int itemCount = adapter.getItemCount();
-                if (itemCount == 0) {
-                    refreshLayout.setVisibility(View.GONE);
-                    layTip.setVisibility(View.VISIBLE);
-                    tvTip.setText(getEmptyTip());
-                    errorImage.setVisibility(View.GONE);
-                } else {
-                    refreshLayout.setVisibility(View.VISIBLE);
-                    layTip.setVisibility(View.GONE);
-                    itemCount -= getHeaderSize();
-                    if(loadMoreEnable && autoJudgeCanLoadMoreEnable){
-                        canLoadMore = itemCount % getPagerSize() == 0 ;
-//                        curPage = itemCount % getPagerSize() == 0 ?
-//                                itemCount / getPagerSize() : (itemCount / getPagerSize()) + 1;
-                    }
-                }
+                onListDataUpdated();
+            }
+
+            @Override
+            public void onItemRangeInserted(int positionStart, int itemCount) {
+                super.onItemRangeInserted(positionStart, itemCount);
+                onListDataUpdated();
             }
         };
         adapter.registerAdapterDataObserver(observer);
@@ -113,6 +104,31 @@ public abstract class ListFragment <P extends IBaseContract.Presenter, A extends
                 if(lastPosition == adapter.getItemCount() - 1){
                     onLoadMore(++curPage);
                 }
+            }
+        }
+    }
+
+    /**
+     * Shared by onChanged() (full rebind) and onItemRangeInserted()
+     * (targeted load-more append) - both need the same empty-state/
+     * canLoadMore bookkeeping, they just fire from different adapter
+     * notify calls.
+     */
+    private void onListDataUpdated(){
+        int itemCount = adapter.getItemCount();
+        if (itemCount == 0) {
+            refreshLayout.setVisibility(View.GONE);
+            layTip.setVisibility(View.VISIBLE);
+            tvTip.setText(getEmptyTip());
+            errorImage.setVisibility(View.GONE);
+        } else {
+            refreshLayout.setVisibility(View.VISIBLE);
+            layTip.setVisibility(View.GONE);
+            itemCount -= getHeaderSize();
+            if(loadMoreEnable && autoJudgeCanLoadMoreEnable){
+                canLoadMore = itemCount % getPagerSize() == 0 ;
+//                        curPage = itemCount % getPagerSize() == 0 ?
+//                                itemCount / getPagerSize() : (itemCount / getPagerSize()) + 1;
             }
         }
     }
@@ -240,6 +256,18 @@ public abstract class ListFragment <P extends IBaseContract.Presenter, A extends
 
     protected void postNotifyDataSetChanged(){
         adapter.notifyDataSetChanged();
+    }
+
+    /**
+     * Use only when the newly-added items were purely appended to the end of
+     * an otherwise-unchanged list (e.g. a load-more page) - it skips
+     * rebinding every already-visible row (each of which may re-trigger a
+     * Glide load) that a full notifyDataSetChanged() would force. Not safe
+     * if existing items could have moved/changed too (e.g. a client-side
+     * re-sort across old+new items) - use postNotifyDataSetChanged() there.
+     */
+    protected void postNotifyItemRangeInserted(int positionStart, int itemCount){
+        adapter.notifyItemRangeInserted(positionStart, itemCount);
     }
 
     private ListScrollListener mListScrollListener;

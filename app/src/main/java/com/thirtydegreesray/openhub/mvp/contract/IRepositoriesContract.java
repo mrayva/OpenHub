@@ -20,7 +20,14 @@ public interface IRepositoriesContract {
 
     interface View extends IBaseContract.View, IBasePagerContract.View, IBaseListContract.View {
 
-        void showRepositories(ArrayList<Repository> repositoryList);
+        /**
+         * @param appendedCount 0 means repositoryList is a fresh replacement
+         *                      (full rebind); >0 means the last appendedCount
+         *                      items were appended in place at the end of an
+         *                      otherwise-unchanged list (safe to insert just
+         *                      those rows instead of rebinding everything).
+         */
+        void showRepositories(ArrayList<Repository> repositoryList, int appendedCount);
 
     }
 

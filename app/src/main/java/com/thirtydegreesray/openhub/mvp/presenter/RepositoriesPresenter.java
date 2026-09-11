@@ -198,15 +198,18 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             @Override
             public void onSuccess(@NonNull HttpResponse<ArrayList<Repository>> response) {
                 mView.hideLoading();
+                int appendedCount;
                 if (isReLoad || readCacheFirst || repos == null || page == 1) {
                     repos = response.body();
+                    appendedCount = 0;
                 } else {
+                    appendedCount = response.body().size();
                     repos.addAll(response.body());
                 }
                 if (response.body().size() == 0 && repos.size() != 0) {
                     mView.setCanLoadMore(false);
                 } else {
-                    mView.showRepositories(repos);
+                    mView.showRepositories(repos, appendedCount);
                 }
             }
         };
@@ -259,9 +262,12 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     @Override
                     public void onSuccess(@NonNull HttpResponse<SearchResult<Repository>> response) {
                         mView.hideLoading();
+                        int appendedCount;
                         if (repos == null || page == 1) {
                             repos = response.body().getItems();
+                            appendedCount = 0;
                         } else {
+                            appendedCount = response.body().getItems().size();
                             repos.addAll(response.body().getItems());
                         }
                         // GitHub's search API has no "created" sort value (it's
@@ -273,11 +279,15 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                         if (RepositoriesFragment.RepositoriesType.TOPICS_SEARCH.equals(type)
                                 && "created".equals(sort)) {
                             sortRepos(repos, sort);
+                            // a full re-sort can move existing rows, not just
+                            // add new ones at the end - not safe to treat as
+                            // a pure append anymore.
+                            appendedCount = 0;
                         }
                         if (response.body().getItems().size() == 0 && repos.size() != 0) {
                             mView.setCanLoadMore(false);
                         } else {
-                            mView.showRepositories(repos);
+                            mView.showRepositories(repos, appendedCount);
                         }
                     }
                 };
@@ -303,7 +313,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         if (!StringUtils.isBlankList(repos)) {
             mView.showErrorToast(getErrorTip(error));
         } else if (error instanceof HttpPageNoFoundError) {
-            mView.showRepositories(new ArrayList<Repository>());
+            mView.showRepositories(new ArrayList<Repository>(), 0);
         } else {
             mView.showLoadError(getErrorTip(error));
         }
@@ -377,13 +387,16 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
     }
 
     private void showQueryRepos(ArrayList<Repository> queryRepos, int page){
+        int appendedCount;
         if(repos == null || page == 1){
             repos = queryRepos;
+            appendedCount = 0;
         } else {
+            appendedCount = queryRepos.size();
             repos.addAll(queryRepos);
         }
 
-        mView.showRepositories(repos);
+        mView.showRepositories(repos, appendedCount);
         mView.hideLoading();
     }
 
@@ -443,7 +456,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         if (StringUtils.isBlankList(topicSlugs)) {
             repos = new ArrayList<>();
             mView.hideLoading();
-            mView.showRepositories(repos);
+            mView.showRepositories(repos, 0);
             mView.setCanLoadMore(false);
             return;
         }
@@ -464,7 +477,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         }
         if (activeTopics.isEmpty()) {
             mView.hideLoading();
-            mView.showRepositories(repos);
+            mView.showRepositories(repos, 0);
             mView.setCanLoadMore(false);
             return;
         }
@@ -507,7 +520,9 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             }
             sortRepos(repos, sortField);
             mView.hideLoading();
-            mView.showRepositories(repos);
+            // every load-more round re-sorts the whole merged pool, so old
+            // items can move too - never a pure append.
+            mView.showRepositories(repos, 0);
             mView.setCanLoadMore(multiTopicExhausted.size() < topicSlugs.size());
         }, error -> {
             if (mView == null) return;
@@ -569,7 +584,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     if(results.size() != 0){
                         repos = results;
                         mView.hideLoading();
-                        mView.showRepositories(repos);
+                        mView.showRepositories(repos, 0);
                     } else {
                         String errorTip = String.format(getString(R.string.github_page_parse_error),
                                 getString(R.string.repo_collections));
@@ -722,7 +737,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     if(results != null){
                         repos = results;
                         mView.hideLoading();
-                        mView.showRepositories(repos);
+                        mView.showRepositories(repos, 0);
                     } else {
                         String errorTip = String.format(getString(R.string.github_page_parse_error),
                                 getString(R.string.trending));
