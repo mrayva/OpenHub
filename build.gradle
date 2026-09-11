@@ -14,6 +14,12 @@ buildscript {
         classpath 'com.android.tools.build:gradle:8.13.2'
         classpath 'com.github.gmazzo.buildconfig:plugin:6.0.9'
         classpath 'com.jakewharton:butterknife-gradle-plugin:10.2.3'
+        // Baseline profile generation - only used by the :baselineprofile
+        // module (a com.android.test module) and app/build.gradle's
+        // androidx.baselineprofile application; the main :app module stays
+        // pure Java.
+        classpath 'androidx.benchmark:benchmark-baseline-profile-gradle-plugin:1.5.0'
+        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:2.0.21'
     }
 }
 
@@ -26,6 +32,11 @@ allprojects {
         maven {url 'https://maven.aliyun.com/repository/central'}
         google()
         mavenCentral()
+        // app/build.gradle also declares this locally for its own JitPack-
+        // hosted deps (Toasty, material-about-library, etc.) - needed here
+        // too so other modules that resolve :app's full graph (e.g.
+        // :baselineprofile, which packages the app under test) can find them.
+        maven { url 'https://jitpack.io' }
     }
 }
 

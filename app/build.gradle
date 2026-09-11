@@ -1,6 +1,7 @@
 apply plugin: 'com.android.application'
 apply plugin: 'com.github.gmazzo.buildconfig'
 apply plugin: 'com.jakewharton.butterknife'
+apply plugin: 'androidx.baselineprofile'
 
 def publicPropsFile = rootProject.file("public.properties")
 if (publicPropsFile.exists()) {
@@ -110,6 +111,12 @@ dependencies {
     implementation 'androidx.test:monitor:1.8.0'
     implementation 'androidx.test.ext:junit:1.3.0'
     implementation 'androidx.swiperefreshlayout:swiperefreshlayout:1.2.0'
+    // Already present transitively (via androidx.activity/fragment, pulled
+    // in by Material/AppCompat) - declared explicitly so it's clear the app
+    // intentionally installs the merged baseline profile into ART's runtime
+    // profile cache, not just an accidental transitive pull.
+    implementation 'androidx.profileinstaller:profileinstaller:1.4.1'
+    baselineProfile project(':baselineprofile')
     androidTestImplementation('com.android.support.test.espresso:espresso-core:3.0.2', {
         exclude group: 'com.android.support', module: 'support-annotations'
     })

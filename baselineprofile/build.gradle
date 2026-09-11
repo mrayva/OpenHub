@@ -1,0 +1,51 @@
+apply plugin: 'com.android.test'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'androidx.baselineprofile'
+
+android {
+    namespace 'com.thirtydegreesray.openhub.baselineprofile'
+    compileSdkVersion COMPILE_SDK_VERSION as int
+    buildToolsVersion BUILD_TOOLS_VERSION
+
+    defaultConfig {
+        minSdkVersion 28
+        targetSdkVersion TARGET_SDK_VERSION as int
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    kotlinOptions {
+        jvmTarget = "17"
+    }
+
+    // This is a com.android.test module (a separate instrumented-test-only
+    // APK, not something end users install) that drives the real :app APK
+    // under the profiler and records which classes/methods run during a
+    // cold start. Only the "normal" flavor is targeted - "fullName" only
+    // differs by app_name/manifest placeholder, not by code path, so a
+    // profile generated against "normal" is equally valid for "fullName".
+    targetProjectPath ":app"
+    flavorDimensions "default"
+    productFlavors {
+        normal {
+            dimension "default"
+        }
+    }
+}
+
+// Use whatever's already connected via adb (the emulator/device used
+// throughout this project's manual testing) instead of requiring a
+// dedicated Gradle Managed Device definition.
+baselineProfile {
+    useConnectedDevices = true
+}
+
+dependencies {
+    implementation 'androidx.test.ext:junit:1.2.1'
+    implementation 'androidx.test.uiautomator:uiautomator:2.3.0'
+    implementation 'androidx.benchmark:benchmark-macro-junit4:1.5.0'
+}
