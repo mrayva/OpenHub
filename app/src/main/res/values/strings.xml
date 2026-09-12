@@ -200,6 +200,7 @@
     <string name="best_match">Best match</string>
     <string name="most_stars">Most stars</string>
     <string name="fewest_stars">Fewest stars</string>
+    <string name="most_watchers">Most watchers</string>
     <string name="most_forks">Most forks</string>
     <string name="fewest_forks">Fewest forks</string>
     <string name="recently_updated">Recently updated</string>
@@ -485,6 +486,7 @@
     <string name="sort_by_created">Recently added</string>
     <string name="topics_editor_tip">Tap a topic to include/exclude it from results, swipe to delete, or tap + to add a new one.</string>
 
+    <string name="updated_at_format">Updated %1$s</string>
     <string name="star_num_today">%s star today</string>
     <string name="star_num_this_week">%s star this week</string>
     <string name="star_num_this_month">%s star this month</string>

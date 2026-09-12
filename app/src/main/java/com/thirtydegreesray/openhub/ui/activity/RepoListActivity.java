@@ -3,9 +3,11 @@
 package com.thirtydegreesray.openhub.ui.activity;
 
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import android.view.Menu;
 import android.view.MenuItem;
 
@@ -82,6 +84,10 @@ public class RepoListActivity extends SingleFragmentActivity<IBaseContract.Prese
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        if(item.getItemId() == R.id.nav_sort && RepositoriesFragment.RepositoriesType.FORKS.equals(type)){
+            showForksSortDialog();
+            return true;
+        }
         if(item.getItemId() == R.id.action_open_in_browser){
             String url = null;
             if(RepositoriesFragment.RepositoriesType.COLLECTION.equals(type)){
@@ -121,6 +127,12 @@ public class RepoListActivity extends SingleFragmentActivity<IBaseContract.Prese
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         if(isFilterEnable()){
+            getMenuInflater().inflate(R.menu.menu_sort, menu);
+        } else if(RepositoriesFragment.RepositoriesType.FORKS.equals(type)){
+            // Not the drawer-based filter used by Owned/Public - GitHub's
+            // forks endpoint only supports 4 fixed sort values, so a plain
+            // dialog (see showForksSortDialog()) is enough; the end drawer
+            // stays disabled for this type (see isFilterEnable()).
             getMenuInflater().inflate(R.menu.menu_sort, menu);
         } else if(RepositoriesFragment.RepositoriesType.COLLECTION.equals(type)
                 || RepositoriesFragment.RepositoriesType.TOPIC.equals(type)){
@@ -188,6 +200,24 @@ public class RepoListActivity extends SingleFragmentActivity<IBaseContract.Prese
             updateEndDrawerContent(R.menu.menu_repositories_filter);
             RepositoriesFilter.initDrawer(navViewEnd, type);
         }
+    }
+
+    private void showForksSortDialog(){
+        final String[] labels = {
+                getString(R.string.recently_created), getString(R.string.previously_created),
+                getString(R.string.most_stars), getString(R.string.most_watchers)
+        };
+        final String[] values = {"newest", "oldest", "stargazers", "watchers"};
+        new AlertDialog.Builder(getActivity())
+                .setTitle(R.string.sort)
+                .setItems(labels, new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        dialog.dismiss();
+                        getFragment().setForksSort(values[which]);
+                    }
+                })
+                .show();
     }
 
 }

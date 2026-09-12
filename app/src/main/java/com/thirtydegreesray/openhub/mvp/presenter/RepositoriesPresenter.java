@@ -91,6 +91,12 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
     @AutoAccess ArrayList<String> topicSlugs;
     @AutoAccess String sort;
 
+    // FORKS only - one of GitHub's own sort values for repos/{owner}/{repo}/forks
+    // ("newest"/"oldest"/"stargazers"/"watchers"). Kept separate from the
+    // "sort" field above, which already means something different (a
+    // client-side re-sort key for TOPICS_SEARCH results).
+    private String forksSort = "newest";
+
     /**
      * True only for Trending and Created-tab SEARCH fragments (set by
      * RepositoriesFragment's factories) - gates ignore-list filtering/swipe/
@@ -250,6 +256,11 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         loadRepositories(false, 1);
     }
 
+    public void setForksSort(String sort) {
+        this.forksSort = sort;
+        loadRepositories(true, 1);
+    }
+
     private Observable<Response<ArrayList<Repository>>> getObservable(boolean forceNetWork, int page) {
         switch (type) {
             case OWNED:
@@ -262,7 +273,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                 return getRepoService().getStarredRepos(forceNetWork, user, page,
                         filter.getSort(), filter.getSortDirection());
             case FORKS:
-                return getRepoService().getForks(forceNetWork, user, repo, page);
+                return getRepoService().getForks(forceNetWork, user, repo, page, forksSort);
             default:
                 return null;
         }

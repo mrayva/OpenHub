@@ -317,6 +317,10 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
         mPresenter.loadRepositories(filter);
     }
 
+    public void setForksSort(String sort) {
+        mPresenter.setForksSort(sort);
+    }
+
     @Override
     public void onLanguageUpdate(TrendingLanguage language) {
         if(mPresenter != null){

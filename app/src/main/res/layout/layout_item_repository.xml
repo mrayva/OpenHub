@@ -188,6 +188,16 @@
 
             </LinearLayout>
 
+            <TextView
+                android:id="@+id/tv_pushed_at"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:textSize="@dimen/text_mini"
+                android:textColor="?android:textColorSecondary"
+                android:paddingTop="@dimen/spacing_mini"
+                tools:text="Updated 3 days ago"/>
+
             <LinearLayout
                 android:id="@+id/topics_lay"
                 android:layout_width="match_parent"
