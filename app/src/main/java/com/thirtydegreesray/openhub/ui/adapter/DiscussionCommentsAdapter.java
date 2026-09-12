@@ -1,8 +1,10 @@
 package com.thirtydegreesray.openhub.ui.adapter;
 
 import android.content.Context;
+import android.content.res.ColorStateList;
 import android.text.Html;
 import androidx.annotation.NonNull;
+import androidx.recyclerview.widget.RecyclerView;
 import android.view.View;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -17,10 +19,12 @@ import com.thirtydegreesray.openhub.ui.adapter.base.BaseViewHolder;
 import com.thirtydegreesray.openhub.ui.fragment.base.BaseFragment;
 import com.thirtydegreesray.openhub.util.PrefUtils;
 import com.thirtydegreesray.openhub.util.StringUtils;
+import com.thirtydegreesray.openhub.util.ViewUtils;
 
 import javax.inject.Inject;
 
 import butterknife.BindView;
+import butterknife.OnClick;
 
 /**
  * Row 0 is always the discussion's own body (see
@@ -32,9 +36,15 @@ import butterknife.BindView;
  */
 public class DiscussionCommentsAdapter extends BaseAdapter<DiscussionCommentsAdapter.ViewHolder, DiscussionComment> {
 
+    private OnUpvoteClickListener upvoteClickListener;
+
     @Inject
     public DiscussionCommentsAdapter(Context context, BaseFragment fragment) {
         super(context, fragment);
+    }
+
+    public void setUpvoteClickListener(OnUpvoteClickListener listener) {
+        this.upvoteClickListener = listener;
     }
 
     @Override
@@ -56,9 +66,18 @@ public class DiscussionCommentsAdapter extends BaseAdapter<DiscussionCommentsAda
         @BindView(R2.id.tv_owner_name) TextView tvOwnerName;
         @BindView(R2.id.tv_updated_at) TextView tvUpdatedAt;
         @BindView(R2.id.tv_comment_body) TextView tvCommentBody;
+        @BindView(R2.id.iv_upvote) ImageView ivUpvote;
+        @BindView(R2.id.tv_upvote_count) TextView tvUpvoteCount;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
+        }
+
+        @OnClick(R2.id.lay_upvote)
+        public void onUpvoteClick() {
+            if (upvoteClickListener != null && getAdapterPosition() != RecyclerView.NO_POSITION) {
+                upvoteClickListener.onUpvoteClick(getAdapterPosition());
+            }
         }
     }
 
@@ -105,5 +124,16 @@ public class DiscussionCommentsAdapter extends BaseAdapter<DiscussionCommentsAda
                     .onlyRetrieveFromCache(!PrefUtils.isLoadImageEnable())
                     .into(holder.ivUserAvatar);
         }
+
+        holder.tvUpvoteCount.setText(String.valueOf(comment.getUpvoteCount()));
+        int tintColor = comment.isViewerHasUpvoted() ?
+                ViewUtils.getAccentColor(context) : ViewUtils.getSecondaryTextColor(context);
+        ColorStateList tint = ColorStateList.valueOf(tintColor);
+        holder.ivUpvote.setImageTintList(tint);
+        holder.tvUpvoteCount.setTextColor(tintColor);
+    }
+
+    public interface OnUpvoteClickListener {
+        void onUpvoteClick(int position);
     }
 }

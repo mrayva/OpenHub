@@ -12,6 +12,7 @@ public class Discussion {
     private Date updatedAt;
     private int upvoteCount;
     private boolean isAnswered;
+    private boolean viewerHasUpvoted;
     private String url;
     private DiscussionUser author;
     private DiscussionCategory category;
@@ -47,6 +48,10 @@ public class Discussion {
 
     public boolean isAnswered() {
         return isAnswered;
+    }
+
+    public boolean isViewerHasUpvoted() {
+        return viewerHasUpvoted;
     }
 
     public String getUrl() {

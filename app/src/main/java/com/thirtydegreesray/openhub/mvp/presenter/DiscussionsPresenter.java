@@ -47,6 +47,7 @@ public class DiscussionsPresenter extends BasePresenter<IDiscussionsContract.Vie
                     createdAt
                     updatedAt
                     upvoteCount
+                    viewerHasUpvoted
                     isAnswered
                     author { login avatarUrl }
                     category { id name emoji }

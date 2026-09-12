@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <include layout="@layout/layout_appbar"/>
+
+    <EditText
+        android:id="@+id/et_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/discussion_title_hint"
+        android:inputType="text"
+        android:maxLines="1"
+        android:singleLine="true"
+        android:background="@null"
+        android:textSize="@dimen/text_normal"
+        android:paddingStart="@dimen/spacing_x_large"
+        android:paddingEnd="@dimen/spacing_x_large"
+        android:paddingTop="@dimen/spacing_normal"
+        android:paddingBottom="@dimen/spacing_normal"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?android:dividerHorizontal"/>
+
+    <TextView
+        android:id="@+id/tv_category"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/choose_category"
+        android:textSize="@dimen/text_normal"
+        android:textColor="?colorAccent"
+        android:background="?android:selectableItemBackground"
+        android:paddingStart="@dimen/spacing_x_large"
+        android:paddingEnd="@dimen/spacing_x_large"
+        android:paddingTop="@dimen/spacing_normal"
+        android:paddingBottom="@dimen/spacing_normal"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?android:dividerHorizontal"/>
+
+    <EditText
+        android:id="@+id/et_body"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="top|start"
+        android:hint="@string/discussion_body_hint"
+        android:inputType="textMultiLine"
+        android:background="@null"
+        android:textSize="@dimen/text_normal"
+        android:padding="@dimen/spacing_x_large"/>
+
+</LinearLayout>

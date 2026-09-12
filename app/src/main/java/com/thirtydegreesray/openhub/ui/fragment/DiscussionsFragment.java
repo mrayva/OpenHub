@@ -109,6 +109,10 @@ public class DiscussionsFragment extends ListFragment<DiscussionsPresenter, Disc
         return super.onOptionsItemSelected(item);
     }
 
+    public void reload() {
+        mPresenter.loadDiscussions(1, true);
+    }
+
     private void showFilterDialog() {
         if (StringUtils.isBlankList(categories)) return;
         String[] labels = new String[categories.size() + 1];

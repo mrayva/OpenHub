@@ -3,6 +3,7 @@
 
 <LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/lay_root"
     android:layout_width="match_parent"
@@ -78,6 +79,36 @@
             android:textSize="@dimen/text_small"
             android:textColor="?android:textColorPrimary"
             tools:text="Comment body text"/>
+
+        <LinearLayout
+            android:id="@+id/lay_upvote"
+            android:layout_width="wrap_content"
+            android:layout_height="48dp"
+            android:layout_marginTop="@dimen/spacing_mini"
+            android:layout_marginStart="-8dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingStart="8dp"
+            android:paddingEnd="12dp"
+            android:background="?android:selectableItemBackgroundBorderless">
+
+            <androidx.appcompat.widget.AppCompatImageView
+                android:id="@+id/iv_upvote"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                app:srcCompat="@drawable/ic_arrow_drop_up"
+                android:tint="?android:textColorSecondary"/>
+
+            <TextView
+                android:id="@+id/tv_upvote_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="@dimen/spacing_mini"
+                android:textSize="@dimen/text_mini"
+                android:textColor="?android:textColorSecondary"
+                tools:text="3"/>
+
+        </LinearLayout>
 
     </LinearLayout>
 

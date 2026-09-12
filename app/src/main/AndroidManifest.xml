@@ -124,6 +124,7 @@
         <activity android:name=".ui.activity.LabelManageActivity"/>
         <activity android:name=".ui.activity.DiscussionsListActivity" android:label="@string/discussions"/>
         <activity android:name=".ui.activity.DiscussionActivity" android:label="@string/discussion"/>
+        <activity android:name=".ui.activity.CreateDiscussionActivity" android:windowSoftInputMode="stateVisible"/>
 
     </application>
 
