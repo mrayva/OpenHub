@@ -69,6 +69,24 @@ public class IgnoreSwipeCallback extends ItemTouchHelper.SimpleCallback {
         return false;
     }
 
+    /**
+     * Default SimpleCallback values (0.5 width threshold, 1x escape velocity)
+     * need a swipe past half the row's width to commit - on a real device
+     * that reads as sluggish/unresponsive next to how short a swipe-to-
+     * dismiss gesture normally is. Lowering both lets a shorter drag, or a
+     * quick flick over a short distance, commit the swipe instead of
+     * snapping back.
+     */
+    @Override
+    public float getSwipeThreshold(@NonNull RecyclerView.ViewHolder viewHolder) {
+        return 0.3f;
+    }
+
+    @Override
+    public float getSwipeEscapeVelocity(float defaultValue) {
+        return defaultValue * 0.5f;
+    }
+
     @Override
     public void onSwiped(@NonNull RecyclerView.ViewHolder viewHolder, int direction) {
         int position = viewHolder.getAdapterPosition();
