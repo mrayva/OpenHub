@@ -21,6 +21,7 @@ import com.thirtydegreesray.openhub.common.AppEventBus;
 import com.thirtydegreesray.openhub.dao.DaoSession;
 import com.thirtydegreesray.openhub.http.CommitService;
 import com.thirtydegreesray.openhub.http.GistService;
+import com.thirtydegreesray.openhub.http.GraphQLService;
 import com.thirtydegreesray.openhub.http.GitHubWebPageService;
 import com.thirtydegreesray.openhub.http.IssueService;
 import com.thirtydegreesray.openhub.http.LoginService;
@@ -166,6 +167,10 @@ public abstract class BasePresenter<V extends IBaseContract.View> implements IBa
 
     protected GistService getGistService() {
         return getServices(GistService.class);
+    }
+
+    protected GraphQLService getGraphQLService() {
+        return getServices(GraphQLService.class, AppConfig.GITHUB_GRAPHQL_URL, true);
     }
 
     protected SearchService getSearchService() {

@@ -12,6 +12,8 @@ import com.thirtydegreesray.openhub.ui.fragment.BookmarksFragment;
 import com.thirtydegreesray.openhub.ui.fragment.CommitFilesFragment;
 import com.thirtydegreesray.openhub.ui.fragment.CommitsFragment;
 import com.thirtydegreesray.openhub.ui.fragment.CreateGistFragment;
+import com.thirtydegreesray.openhub.ui.fragment.DiscussionCommentsFragment;
+import com.thirtydegreesray.openhub.ui.fragment.DiscussionsFragment;
 import com.thirtydegreesray.openhub.ui.fragment.GistCommentsFragment;
 import com.thirtydegreesray.openhub.ui.fragment.GistFilesFragment;
 import com.thirtydegreesray.openhub.ui.fragment.GistsFragment;
@@ -66,4 +68,6 @@ public interface FragmentComponent {
     void inject(GistFilesFragment fragment);
     void inject(GistCommentsFragment fragment);
     void inject(CreateGistFragment fragment);
+    void inject(DiscussionsFragment fragment);
+    void inject(DiscussionCommentsFragment fragment);
 }

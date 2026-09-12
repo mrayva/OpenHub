@@ -19,6 +19,14 @@ public class AppConfig {
 
     public final static String GITHUB_API_BASE_URL = "https://api.github.com/";
 
+    /**
+     * Discussions have no REST API - GitHub only exposes them via GraphQL, at
+     * a single POST /graphql endpoint (see GraphQLService). Retrofit requires
+     * baseUrl to end in "/", so this is the same host as GITHUB_API_BASE_URL
+     * with the "graphql" path left for the service method itself to supply.
+     */
+    public final static String GITHUB_GRAPHQL_URL = "https://api.github.com/";
+
     public final static String GITHUB_CONTENT_BASE_URL = "https://raw.githubusercontent.com/";
 
     /**

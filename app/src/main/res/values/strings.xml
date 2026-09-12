@@ -153,6 +153,11 @@
     <string name="gist">Gist</string>
     <string name="my_gists">My Gists</string>
     <string name="public_gists">Public Gists</string>
+    <string name="discussions">Discussions</string>
+    <string name="discussion">Discussion</string>
+    <string name="no_discussions">No discussions</string>
+    <string name="filter_by_category">Filter by category</string>
+    <string name="all_categories">All categories</string>
     <string name="no_gists">No gists</string>
     <string name="no_files">No files</string>
     <string name="no_files_add_one">No files yet - tap + to add one</string>

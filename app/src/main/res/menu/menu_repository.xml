@@ -48,6 +48,10 @@
         android:title="@string/wiki"
         app:showAsAction="never"/>
     <item
+        android:id="@+id/action_discussions"
+        android:title="@string/discussions"
+        app:showAsAction="never"/>
+    <item
         android:id="@+id/action_download_source_zip"
         android:title="@string/download_source_zip"
         app:showAsAction="never"/>
