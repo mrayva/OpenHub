@@ -2,6 +2,8 @@
 
 package com.thirtydegreesray.openhub.ui.fragment;
 
+import android.app.Activity;
+import android.content.Intent;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import android.view.View;
@@ -41,6 +43,8 @@ public class GistsFragment extends ListFragment<GistsPresenter, GistsAdapter>
     public static GistsFragment create(@NonNull GistsType type) {
         return create(type, "");
     }
+
+    private final int GIST_DETAIL_REQUEST_CODE = 300;
 
     public GistsType getGistsType() {
         return (GistsType) getArguments().getSerializable("type");
@@ -95,7 +99,20 @@ public class GistsFragment extends ListFragment<GistsPresenter, GistsAdapter>
     @Override
     public void onItemClick(int position, @NonNull View view) {
         super.onItemClick(position, view);
-        GistActivity.show(getActivity(), adapter.getData().get(position));
+        Intent intent = GistActivity.createIntent(getActivity(), adapter.getData().get(position).getId());
+        startActivityForResult(intent, GIST_DETAIL_REQUEST_CODE);
+    }
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == GIST_DETAIL_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            mPresenter.loadGists(1, true);
+        }
+    }
+
+    public void reload() {
+        mPresenter.loadGists(1, true);
     }
 
     @Override

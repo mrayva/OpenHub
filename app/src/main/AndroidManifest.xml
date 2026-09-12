@@ -101,6 +101,8 @@
         <activity android:name=".ui.activity.MyTopicsActivity" android:label="@string/my_topics"/>
         <activity android:name=".ui.activity.GistsListActivity" android:label="@string/gists"/>
         <activity android:name=".ui.activity.GistActivity" android:label="@string/gist"/>
+        <activity android:name=".ui.activity.CreateGistActivity" android:windowSoftInputMode="stateVisible"/>
+        <activity android:name=".ui.activity.GistFileEditorActivity" android:windowSoftInputMode="stateVisible"/>
         <activity android:name=".ui.activity.TopicRepositoriesActivity"/>
         <activity android:name=".ui.activity.TopicsEditorActivity" android:label="@string/my_topics"/>
         <activity android:name=".ui.activity.AboutActivity" android:label="@string/about"/>

@@ -12,14 +12,19 @@ import android.view.View;
 import com.thirtydegreesray.dataautoaccess.annotation.AutoAccess;
 import com.thirtydegreesray.openhub.AppData;
 import com.thirtydegreesray.openhub.R;
+import com.thirtydegreesray.openhub.R2;
 import com.thirtydegreesray.openhub.inject.component.AppComponent;
 import com.thirtydegreesray.openhub.ui.activity.base.PagerActivity;
 import com.thirtydegreesray.openhub.ui.adapter.base.FragmentPagerModel;
 import com.thirtydegreesray.openhub.ui.adapter.base.FragmentViewPagerAdapter;
 import com.thirtydegreesray.openhub.ui.fragment.GistsFragment;
+import com.thirtydegreesray.openhub.ui.widget.ZoomAbleFloatingActionButton;
 import com.thirtydegreesray.openhub.util.BundleHelper;
 
 import java.util.Collections;
+
+import butterknife.BindView;
+import butterknife.OnClick;
 
 /**
  * Two launch modes sharing one Activity+layout rather than two near-identical
@@ -45,8 +50,12 @@ public class GistsListActivity extends PagerActivity {
         activity.startActivity(intent);
     }
 
+    private final int CREATE_GIST_REQUEST_CODE = 400;
+
     @AutoAccess Mode mode;
     @AutoAccess String user;
+
+    @BindView(R2.id.float_action_bn) ZoomAbleFloatingActionButton floatingActionButton;
 
     @Override
     protected void initActivity() {
@@ -64,6 +73,8 @@ public class GistsListActivity extends PagerActivity {
             pagerAdapter.setPagerList(FragmentPagerModel.createGistsPagerList(
                     getActivity(), getFragments(), AppData.INSTANCE.getLoggedUser().getLogin()));
             tabLayout.setVisibility(View.VISIBLE);
+            floatingActionButton.setVisibility(View.VISIBLE);
+            floatingActionButton.setImageResource(R.drawable.ic_add);
         } else {
             pagerAdapter.setPagerList(Collections.singletonList(
                     new FragmentPagerModel(getString(R.string.gists),
@@ -73,6 +84,24 @@ public class GistsListActivity extends PagerActivity {
         tabLayout.setupWithViewPager(viewPager);
         viewPager.setAdapter(pagerAdapter);
         showFirstPager();
+    }
+
+    @OnClick(R2.id.float_action_bn)
+    public void onAddGistClick() {
+        CreateGistActivity.showForCreate(getActivity(), CREATE_GIST_REQUEST_CODE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == CREATE_GIST_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+            for (Object fragment : getFragments()) {
+                if (fragment instanceof GistsFragment &&
+                        GistsFragment.GistsType.MY.equals(((GistsFragment) fragment).getGistsType())) {
+                    ((GistsFragment) fragment).reload();
+                }
+            }
+        }
     }
 
     @Override

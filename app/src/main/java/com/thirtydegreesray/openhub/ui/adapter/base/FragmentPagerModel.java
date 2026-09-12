@@ -207,7 +207,7 @@ public class FragmentPagerModel {
                 new FragmentPagerModel(context.getString(R.string.files),
                         getFragment(fragments, 0, () -> GistFilesFragment.create(gist))),
                 new FragmentPagerModel(context.getString(R.string.comments),
-                        getFragment(fragments, 1, () -> GistCommentsFragment.create(gist.getId())))
+                        getFragment(fragments, 1, () -> GistCommentsFragment.create(gist)))
         ));
     }
 

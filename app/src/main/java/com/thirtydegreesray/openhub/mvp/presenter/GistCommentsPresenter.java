@@ -3,12 +3,16 @@
 package com.thirtydegreesray.openhub.mvp.presenter;
 
 import com.thirtydegreesray.dataautoaccess.annotation.AutoAccess;
+import com.thirtydegreesray.openhub.AppData;
+import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.dao.DaoSession;
 import com.thirtydegreesray.openhub.http.core.HttpObserver;
 import com.thirtydegreesray.openhub.http.core.HttpResponse;
 import com.thirtydegreesray.openhub.http.error.HttpPageNoFoundError;
 import com.thirtydegreesray.openhub.mvp.contract.IGistCommentsContract;
+import com.thirtydegreesray.openhub.mvp.model.Gist;
 import com.thirtydegreesray.openhub.mvp.model.GistComment;
+import com.thirtydegreesray.openhub.mvp.model.request.CommentRequestModel;
 import com.thirtydegreesray.openhub.mvp.presenter.base.BasePagerPresenter;
 import com.thirtydegreesray.openhub.util.StringUtils;
 
@@ -19,13 +23,10 @@ import javax.inject.Inject;
 import retrofit2.Response;
 import rx.Observable;
 
-/**
- * Read-only this phase - no add/edit/delete yet (see plan).
- */
 public class GistCommentsPresenter extends BasePagerPresenter<IGistCommentsContract.View>
         implements IGistCommentsContract.Presenter {
 
-    @AutoAccess String gistId;
+    @AutoAccess Gist gist;
 
     private ArrayList<GistComment> comments;
 
@@ -70,9 +71,85 @@ public class GistCommentsPresenter extends BasePagerPresenter<IGistCommentsContr
         generalRxHttpExecute(new IObservableCreator<ArrayList<GistComment>>() {
             @Override
             public Observable<Response<ArrayList<GistComment>>> createObservable(boolean forceNetWork) {
-                return getGistService().getGistComments(forceNetWork, gistId, page);
+                return getGistService().getGistComments(forceNetWork, gist.getId(), page);
             }
         }, httpObserver, readCacheFirst);
+    }
+
+    @Override
+    public void addComment(final String text) {
+        if (StringUtils.isBlank(text)) {
+            mView.showErrorToast(getString(R.string.comment_null_warning));
+            return;
+        }
+        HttpObserver<GistComment> httpObserver = new HttpObserver<GistComment>() {
+            @Override
+            public void onError(Throwable error) {
+                mView.showErrorToast(getErrorTip(error));
+            }
+
+            @Override
+            public void onSuccess(HttpResponse<GistComment> response) {
+                if (comments == null) comments = new ArrayList<>();
+                comments.add(response.body());
+                mView.showAddedComment(response.body());
+                mView.showSuccessToast(getString(R.string.comment_success));
+            }
+        };
+        generalRxHttpExecute(new IObservableCreator<GistComment>() {
+            @Override
+            public Observable<Response<GistComment>> createObservable(boolean forceNetWork) {
+                return getGistService().createGistComment(gist.getId(), new CommentRequestModel(text));
+            }
+        }, httpObserver, false, mView.getProgressDialog(getLoadTip()));
+    }
+
+    @Override
+    public void editComment(final String commentId, final String body) {
+        if (StringUtils.isBlank(commentId)) {
+            mView.showErrorToast(getString(R.string.comment_null_warning));
+            return;
+        }
+        HttpObserver<GistComment> httpObserver = new HttpObserver<GistComment>() {
+            @Override
+            public void onError(Throwable error) {
+                mView.showErrorToast(getErrorTip(error));
+                mView.showEditCommentPage(commentId, body);
+            }
+
+            @Override
+            public void onSuccess(HttpResponse<GistComment> response) {
+                updateComment(response.body());
+                mView.showComments(comments);
+                mView.showSuccessToast(getString(R.string.comment_success));
+            }
+        };
+        generalRxHttpExecute(new IObservableCreator<GistComment>() {
+            @Override
+            public Observable<Response<GistComment>> createObservable(boolean forceNetWork) {
+                return getGistService().editGistComment(gist.getId(), commentId, new CommentRequestModel(body));
+            }
+        }, httpObserver, false, mView.getProgressDialog(getLoadTip()));
+    }
+
+    @Override
+    public void deleteComment(String commentId) {
+        executeSimpleRequest(getGistService().deleteGistComment(gist.getId(), commentId));
+    }
+
+    @Override
+    public boolean isEditAndDeleteEnable(int position) {
+        String loggedUser = AppData.INSTANCE.getLoggedUser().getLogin();
+        return loggedUser.equals(gist.getOwner().getLogin()) ||
+                loggedUser.equals(comments.get(position).getUser().getLogin());
+    }
+
+    private void updateComment(GistComment editedComment) {
+        for (GistComment comment : comments) {
+            if (editedComment.getId() == comment.getId()) {
+                comment.setBody(editedComment.getBody());
+            }
+        }
     }
 
     private void handleError(Throwable error) {

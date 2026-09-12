@@ -1,0 +1,11 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+      xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/action_create_public"
+        android:title="@string/create_public_gist"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/action_create_secret"
+        android:title="@string/create_secret_gist"
+        app:showAsAction="never"/>
+</menu>

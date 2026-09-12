@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <include layout="@layout/layout_appbar"/>
+
+    <EditText
+        android:id="@+id/et_file_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:hint="@string/file_name_hint"
+        android:inputType="text"
+        android:maxLines="1"
+        android:singleLine="true"
+        android:background="@null"
+        android:textSize="@dimen/text_normal"
+        android:paddingStart="@dimen/spacing_x_large"
+        android:paddingEnd="@dimen/spacing_x_large"
+        android:paddingTop="@dimen/spacing_normal"
+        android:paddingBottom="@dimen/spacing_normal"/>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="?android:dividerHorizontal"/>
+
+    <EditText
+        android:id="@+id/et_file_content"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:gravity="top|start"
+        android:inputType="textMultiLine|textNoSuggestions"
+        android:typeface="monospace"
+        android:background="@null"
+        android:textSize="@dimen/text_normal"
+        android:padding="@dimen/spacing_x_large"/>
+
+</LinearLayout>
