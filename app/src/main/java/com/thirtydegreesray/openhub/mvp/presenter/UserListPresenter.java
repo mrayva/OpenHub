@@ -3,6 +3,7 @@
 package com.thirtydegreesray.openhub.mvp.presenter;
 
 import com.thirtydegreesray.dataautoaccess.annotation.AutoAccess;
+import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.common.Event;
 import com.thirtydegreesray.openhub.dao.Bookmark;
 import com.thirtydegreesray.openhub.dao.BookmarkDao;
@@ -179,10 +180,25 @@ public class UserListPresenter extends BasePagerPresenter<IUserListContract.View
         if(!StringUtils.isBlankList(users)){
             mView.showErrorToast(getErrorTip(error));
         } else if(error instanceof HttpPageNoFoundError){
-            mView.showUsers(new ArrayList<User>());
+            if (isStargazersOrWatchers()) {
+                // GitHub restricted these two list endpoints in mid-2026 to
+                // the repo's owner/collaborators only - everyone else gets a
+                // 404 regardless of how valid their token otherwise is (see
+                // https://github.blog/changelog/2026-06-30-upcoming-access-restrictions-to-public-api-endpoints-and-ui-views/).
+                // Not fixable client-side, so say so instead of silently
+                // showing an empty list that looks like "zero stargazers".
+                mView.showLoadError(getString(R.string.stargazers_watchers_restricted));
+            } else {
+                mView.showUsers(new ArrayList<User>());
+            }
         } else {
             mView.showLoadError(getErrorTip(error));
         }
+    }
+
+    private boolean isStargazersOrWatchers() {
+        return UserListFragment.UserListType.STARGAZERS.equals(type)
+                || UserListFragment.UserListType.WATCHERS.equals(type);
     }
 
     private void loadTrace(final int page){

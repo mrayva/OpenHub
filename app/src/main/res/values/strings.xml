@@ -195,6 +195,7 @@
     <string name="unknown">Unknown</string>
     <string name="organizations">Organizations</string>
     <string name="no_user">No users</string>
+    <string name="stargazers_watchers_restricted">GitHub only shows this list to the repository\'s owner and collaborators now, to prevent it being scraped for spam. There\'s no way around this from the app\'s side.</string>
     <string name="no_activity">No activities</string>
     <string name="no_repository">No repositories</string>
     <string name="no_file">No files</string>
