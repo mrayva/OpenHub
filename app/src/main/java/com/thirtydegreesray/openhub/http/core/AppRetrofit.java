@@ -166,9 +166,14 @@ public enum  AppRetrofit {
 //            //不设置缓存策略
 //            else
 
-            //有forceNetWork时，强制更改缓存策略
+            //有forceNetWork时，强制更改缓存策略 - only for successful responses: forcing
+            //this Cache-Control onto an error response (401, 500, an empty
+            //result from a transient failure, etc.) makes OkHttp treat that
+            //failure as valid, cacheable data for CACHE_MAX_AGE (4 weeks),
+            //served from disk on every later attempt even after whatever
+            //caused the failure (e.g. an invalid token) is fixed.
             String forceNetWork = request.header("forceNetWork");
-            if(!StringUtils.isBlank(forceNetWork)){
+            if(!StringUtils.isBlank(forceNetWork) && originalResponse.isSuccessful()){
                 requestCacheControl = getCacheString();
             }
 
