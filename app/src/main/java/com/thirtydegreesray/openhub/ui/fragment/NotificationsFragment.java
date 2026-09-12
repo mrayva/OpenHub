@@ -16,7 +16,6 @@ import com.thirtydegreesray.openhub.inject.component.DaggerFragmentComponent;
 import com.thirtydegreesray.openhub.inject.module.FragmentModule;
 import com.thirtydegreesray.openhub.mvp.contract.INotificationsContract;
 import com.thirtydegreesray.openhub.mvp.model.Notification;
-import com.thirtydegreesray.openhub.mvp.model.NotificationSubject;
 import com.thirtydegreesray.openhub.mvp.model.Repository;
 import com.thirtydegreesray.openhub.mvp.presenter.NotificationsPresenter;
 import com.thirtydegreesray.openhub.ui.activity.CommitDetailActivity;
@@ -108,12 +107,17 @@ public class NotificationsFragment extends ListFragment<NotificationsPresenter, 
                     CommitDetailActivity.show(getActivity(), url);
                     break;
                 case PullRequest:
-                    showInfoToast(getString(R.string.developing));
+                    // OpenHub has no dedicated PR-detail screen (no diff/merge
+                    // UI), but a pull request is also an issue on GitHub's
+                    // side - the same /issues/{number} endpoint returns its
+                    // title, description and comment thread, so translating
+                    // the notification's .../pulls/{number} URL into an
+                    // issue URL lets it open there instead of doing nothing.
+                    IssueDetailActivity.show(getActivity(), url.replace("/pulls/", "/issues/"));
                     break;
             }
 
-            if(notification.isUnread() &&
-                    !notification.getSubject().getType().equals(NotificationSubject.Type.PullRequest)){
+            if(notification.isUnread()){
                 mPresenter.markNotificationAsRead(notification.getId());
                 notification.setUnread(false);
                 adapter.notifyItemChanged(position);
