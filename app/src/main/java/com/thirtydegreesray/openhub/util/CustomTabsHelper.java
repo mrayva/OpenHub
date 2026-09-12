@@ -89,7 +89,12 @@ public enum  CustomTabsHelper {
         } else if ((bestPackageName = getFirstMatchedPackage(packagesSupportingCustomTabs)) != null) {
             //do nothing
         } else {
-            packagesSupportingCustomTabs.get(0);
+            // None of the ambiguous candidates is the default browser or a
+            // recognized Chrome/Firefox package (e.g. Samsung Internet, Edge,
+            // Opera...) - fall back to the first one that actually supports
+            // Custom Tabs rather than silently returning null and forcing
+            // every link click down to openInBrowser()'s plain-intent path.
+            bestPackageName = packagesSupportingCustomTabs.get(0);
         }
         return bestPackageName;
     }

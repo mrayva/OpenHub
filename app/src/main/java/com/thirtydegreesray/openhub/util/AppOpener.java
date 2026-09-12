@@ -91,10 +91,28 @@ public class AppOpener {
         Uri uri = Uri.parse(url);
         Intent intent = new Intent(Intent.ACTION_VIEW, uri).addCategory(Intent.CATEGORY_BROWSABLE);
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent = createActivityChooserIntent(context, intent, uri, VIEW_IGNORE_PACKAGE);
-        if(intent != null){
+        Intent chooserIntent = createActivityChooserIntent(context, intent, uri, VIEW_IGNORE_PACKAGE);
+        if(chooserIntent != null){
+            try {
+                context.startActivity(chooserIntent);
+                return;
+            } catch (ActivityNotFoundException ignored) {
+                // one of the resolved packages stopped being launchable
+                // between the query above and now - fall through to letting
+                // the OS resolve it directly instead of giving up.
+            }
+        }
+        // createActivityChooserIntent() builds its list from our own
+        // PackageManager.queryIntentActivities() + manual filtering (skips
+        // non-exported activities, our own package, a hardcoded ignore
+        // list...), which can miss a browser that's genuinely installed and
+        // otherwise perfectly launchable (seen on real devices whose default
+        // browser isn't Chrome/Firefox). A plain implicit ACTION_VIEW lets
+        // Android's own, authoritative resolution have the final say before
+        // we conclude there's really no browser at all.
+        try {
             context.startActivity(intent);
-        } else {
+        } catch (ActivityNotFoundException e) {
             Toasty.warning(context, context.getString(R.string.no_browser_clients), Toast.LENGTH_LONG).show();
         }
     }
