@@ -6,12 +6,14 @@ import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.recyclerview.widget.ItemTouchHelper;
+import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SimpleItemAnimator;
 import com.google.android.material.navigation.NavigationView;
 import com.google.android.material.snackbar.Snackbar;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
 import android.view.View;
 
 import com.thirtydegreesray.openhub.R;
@@ -224,6 +226,24 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
             }
             IgnoreSwipeCallback callback = new IgnoreSwipeCallback(getContext(), adapter, this);
             new ItemTouchHelper(callback).attachToRecyclerView(recyclerView);
+            // Trending/Created host their DAILY/WEEKLY/MONTHLY tabs in a
+            // ViewPager, whose onInterceptTouchEvent runs before the child
+            // RecyclerView's and claims a horizontal drag for paging as soon
+            // as it exceeds touch slop - racing (and often beating)
+            // ItemTouchHelper for the same gesture, so a swipe meant to
+            // ignore a row would instead flip tabs. Telling the ViewPager
+            // not to intercept for the duration of any touch that starts on
+            // this list hands every horizontal drag here to ItemTouchHelper
+            // instead; tab switching still works via the tab bar itself.
+            recyclerView.addOnItemTouchListener(new RecyclerView.SimpleOnItemTouchListener() {
+                @Override
+                public boolean onInterceptTouchEvent(@NonNull RecyclerView rv, @NonNull MotionEvent e) {
+                    if (e.getActionMasked() == MotionEvent.ACTION_DOWN && rv.getParent() != null) {
+                        rv.getParent().requestDisallowInterceptTouchEvent(true);
+                    }
+                    return false;
+                }
+            });
         } else if (RepositoriesType.IGNORED.equals(mPresenter.getType())) {
             ItemTouchHelperCallback callback = new ItemTouchHelperCallback(
                     0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT, this);
