@@ -58,9 +58,9 @@
 
         <com.thirtydegreesray.openhub.ui.widget.ToastAbleImageButton
             android:id="@+id/mark_as_read_bn"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:padding="@dimen/spacing_micro"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:scaleType="center"
             app:srcCompat="@drawable/ic_done_title"
             android:tint="?colorAccent"
             app:toast_text="@string/mark_as_read"
