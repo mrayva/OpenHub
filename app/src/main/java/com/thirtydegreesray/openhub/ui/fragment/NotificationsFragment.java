@@ -107,13 +107,7 @@ public class NotificationsFragment extends ListFragment<NotificationsPresenter, 
                     CommitDetailActivity.show(getActivity(), url);
                     break;
                 case PullRequest:
-                    // OpenHub has no dedicated PR-detail screen (no diff/merge
-                    // UI), but a pull request is also an issue on GitHub's
-                    // side - the same /issues/{number} endpoint returns its
-                    // title, description and comment thread, so translating
-                    // the notification's .../pulls/{number} URL into an
-                    // issue URL lets it open there instead of doing nothing.
-                    IssueDetailActivity.show(getActivity(), url.replace("/pulls/", "/issues/"));
+                    openPullRequestNotification(url);
                     break;
             }
 
@@ -143,6 +137,31 @@ public class NotificationsFragment extends ListFragment<NotificationsPresenter, 
             return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * OpenHub has no dedicated PR-detail screen (no diff/merge UI), but a
+     * pull request is also an issue on GitHub's side - the same
+     * /issues/{number} endpoint returns its title, description and comment
+     * thread. Parse owner/repo/number out of the notification's own API URL
+     * (.../repos/{owner}/{repo}/pulls/{number}) directly and hand them to
+     * IssueDetailActivity.show(activity, owner, repoName, issueNumber),
+     * rather than string-replacing "/pulls/" with "/issues/" and relying on
+     * IssueDetailPresenter's own URL parsing/regex to make sense of it - that
+     * silently failed for some notifications (leaving owner/repoName null)
+     * and crashed the app in the resulting network call.
+     */
+    private void openPullRequestNotification(String url) {
+        try {
+            String path = url.substring(url.indexOf("/repos/") + "/repos/".length());
+            String[] parts = path.split("/");
+            String owner = parts[0];
+            String repoName = parts[1];
+            int issueNumber = Integer.parseInt(parts[3].replaceAll("[^0-9]", ""));
+            IssueDetailActivity.show(getActivity(), owner, repoName, issueNumber);
+        } catch (Exception e) {
+            showErrorToast(getString(R.string.pull_request_open_failed));
+        }
     }
 
     @Override

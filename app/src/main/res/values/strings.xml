@@ -329,6 +329,7 @@
 
     <string name="unread">Unread</string>
     <string name="no_notifications_tip">No new notifications.</string>
+    <string name="pull_request_open_failed">Couldn\'t open this pull request.</string>
     <string name="share_to_friends">Share to your friends</string>
     <string name="github_download_url" translatable="false">https://github.com/Sergey842248/OpenHub/releases/latest</string>
     <string name="feedback">Open an Issue</string>
