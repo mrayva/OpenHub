@@ -249,6 +249,9 @@ public class MainActivity extends BaseDrawerActivity<MainPresenter>
             case R.id.nav_my_topics:
                 MyTopicsActivity.show(getActivity());
                 break;
+            case R.id.nav_gists:
+                GistsListActivity.showMine(getActivity());
+                break;
             case R.id.nav_search:
                 SearchActivity.show(getActivity());
                 break;

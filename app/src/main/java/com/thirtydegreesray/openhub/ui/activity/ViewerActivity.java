@@ -30,7 +30,7 @@ import com.thirtydegreesray.openhub.util.StringUtils;
 public class ViewerActivity extends SingleFragmentActivity<IBaseContract.Presenter, ViewerFragment> {
 
     public enum ViewerType{
-        RepoFile, MarkDown, DiffFile, Image, HtmlSource
+        RepoFile, MarkDown, DiffFile, Image, HtmlSource, Code
     }
 
     public static void showHtmlSource(@NonNull Context context, @NonNull String title,
@@ -46,6 +46,19 @@ public class ViewerActivity extends SingleFragmentActivity<IBaseContract.Present
         Intent intent = new Intent(context, ViewerActivity.class);
         intent.putExtras(BundleHelper.builder().put("viewerType", ViewerType.MarkDown)
                 .put("title", title).put("source", mdSource).build());
+        context.startActivity(intent);
+    }
+
+    /**
+     * For content already available in memory (e.g. a Gist file's inline
+     * content) - renders directly with syntax highlighting, no network fetch,
+     * unlike the RepoFile path which always fetches by URL.
+     */
+    public static void showCode(@NonNull Context context, @NonNull String title,
+                                @NonNull String code, @Nullable String extension){
+        Intent intent = new Intent(context, ViewerActivity.class);
+        intent.putExtras(BundleHelper.builder().put("viewerType", ViewerType.Code)
+                .put("title", title).put("source", code).put("extension", extension).build());
         context.startActivity(intent);
     }
 
@@ -105,12 +118,14 @@ public class ViewerActivity extends SingleFragmentActivity<IBaseContract.Present
 
     @AutoAccess String title;
     @AutoAccess String source;
+    @AutoAccess String extension;
 
     @AutoAccess String imageUrl;
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        if(fileModel != null || commitFile != null || imageUrl != null)
+        if(fileModel != null || commitFile != null || imageUrl != null
+                || ViewerType.Code.equals(viewerType))
             getMenuInflater().inflate(R.menu.menu_viewer, menu);
         return super.onCreateOptionsMenu(menu);
     }
@@ -140,6 +155,8 @@ public class ViewerActivity extends SingleFragmentActivity<IBaseContract.Present
             fragment = ViewerFragment.createForImage(title, imageUrl);
         } else if(ViewerType.HtmlSource.equals(viewerType)){
             fragment = ViewerFragment.createForHtml(title, source);
+        } else if(ViewerType.Code.equals(viewerType)){
+            fragment = ViewerFragment.createForCode(title, source, extension);
         } else {
             fragment = ViewerFragment.createForMd(title, source);
         }

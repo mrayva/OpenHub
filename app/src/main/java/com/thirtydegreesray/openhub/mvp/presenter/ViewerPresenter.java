@@ -38,6 +38,7 @@ public class ViewerPresenter extends BasePresenter<IViewerContract.View>
 
     @AutoAccess String title;
     @AutoAccess String source;
+    @AutoAccess String extension;
     @AutoAccess String imageUrl;
 
     @AutoAccess CommitFile commitFile;
@@ -58,6 +59,8 @@ public class ViewerPresenter extends BasePresenter<IViewerContract.View>
             mView.loadImageUrl(imageUrl);
         } else if(ViewerActivity.ViewerType.HtmlSource.equals(viewerType)) {
             mView.loadMdText(source, null);
+        } else if(ViewerActivity.ViewerType.Code.equals(viewerType)) {
+            mView.loadCode(source, extension);
         } else {
             mView.loadMdText(source, null);
         }
@@ -131,7 +134,12 @@ public class ViewerPresenter extends BasePresenter<IViewerContract.View>
     }
 
     public String getExtension(){
-        return GitHubHelper.getExtension(fileModel.getUrl());
+        return ViewerActivity.ViewerType.Code.equals(viewerType) ?
+                extension : GitHubHelper.getExtension(fileModel.getUrl());
+    }
+
+    public String getSource() {
+        return source;
     }
 
     public FileModel getFileModel() {

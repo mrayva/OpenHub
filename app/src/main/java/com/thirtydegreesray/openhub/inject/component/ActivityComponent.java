@@ -7,6 +7,7 @@ import com.thirtydegreesray.openhub.inject.module.ActivityModule;
 import com.thirtydegreesray.openhub.ui.activity.CommitDetailActivity;
 import com.thirtydegreesray.openhub.ui.activity.CreatedActivity;
 import com.thirtydegreesray.openhub.ui.activity.EditIssueActivity;
+import com.thirtydegreesray.openhub.ui.activity.GistActivity;
 import com.thirtydegreesray.openhub.ui.activity.IssueDetailActivity;
 import com.thirtydegreesray.openhub.ui.activity.IssuesActivity;
 import com.thirtydegreesray.openhub.ui.activity.LoginActivity;
@@ -44,4 +45,5 @@ public interface ActivityComponent {
     void inject(TrendingActivity activity);
     void inject(CreatedActivity activity);
     void inject(MyTopicsActivity activity);
+    void inject(GistActivity activity);
 }

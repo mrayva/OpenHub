@@ -61,6 +61,15 @@ public class ViewerFragment extends BaseFragment<ViewerPresenter>
     }
 
     @NonNull
+    public static ViewerFragment createForCode(@NonNull String title, @NonNull String code,
+                                               @Nullable String extension) {
+        ViewerFragment fragment = new ViewerFragment();
+        fragment.setArguments(BundleHelper.builder().put("viewerType", ViewerActivity.ViewerType.Code)
+                .put("title", title).put("source", code).put("extension", extension).build());
+        return fragment;
+    }
+
+    @NonNull
     public static ViewerFragment createForImage(@NonNull String title, @NonNull String imageUrl) {
         ViewerFragment fragment = new ViewerFragment();
         fragment.setArguments(BundleHelper.builder().put("viewerType", ViewerActivity.ViewerType.Image)
@@ -118,6 +127,13 @@ public class ViewerFragment extends BaseFragment<ViewerPresenter>
         MenuItem menuItemDownload = menu.findItem(R.id.action_download);
         MenuItem menuItemViewFile = menu.findItem(R.id.action_view_file);
         MenuItem menuItemRefresh = menu.findItem(R.id.action_refresh);
+        MenuItem menuItemOpenInBrowser = menu.findItem(R.id.action_open_in_browser);
+        MenuItem menuItemShare = menu.findItem(R.id.action_share);
+        MenuItem menuItemCopyUrl = menu.findItem(R.id.action_copy_url);
+        boolean hasHtmlUrl = !ViewerActivity.ViewerType.Code.equals(mPresenter.getViewerType());
+        menuItemOpenInBrowser.setVisible(hasHtmlUrl);
+        menuItemShare.setVisible(hasHtmlUrl);
+        menuItemCopyUrl.setVisible(hasHtmlUrl);
         if(ViewerActivity.ViewerType.RepoFile.equals(mPresenter.getViewerType())) {
             menuItem.setVisible(mPresenter.isCode() && !StringUtils.isBlank(mPresenter.getDownloadSource()));
             menuItem.setChecked(wrap);
@@ -134,6 +150,12 @@ public class ViewerFragment extends BaseFragment<ViewerPresenter>
             menuItem.setVisible(false);
             menuItemViewFile.setVisible(false);
             menuItemRefresh.setVisible(false);
+        } else if(ViewerActivity.ViewerType.Code.equals(mPresenter.getViewerType())) {
+            menuItem.setVisible(true);
+            menuItem.setChecked(wrap);
+            menuItemDownload.setVisible(false);
+            menuItemViewFile.setVisible(false);
+            menuItemRefresh.setVisible(false);
         }
     }
 
@@ -147,6 +169,8 @@ public class ViewerFragment extends BaseFragment<ViewerPresenter>
                 loadCode(mPresenter.getDownloadSource(), mPresenter.getExtension());
             } else if(ViewerActivity.ViewerType.DiffFile.equals(mPresenter.getViewerType())){
                 loadDiffFile(mPresenter.getCommitFile().getPatch());
+            } else if(ViewerActivity.ViewerType.Code.equals(mPresenter.getViewerType())){
+                loadCode(mPresenter.getSource(), mPresenter.getExtension());
             }
             return true;
         } else if(item.getItemId() == R.id.action_refresh){

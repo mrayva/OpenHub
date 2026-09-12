@@ -8,6 +8,7 @@ import androidx.fragment.app.Fragment;
 
 import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.R2;
+import com.thirtydegreesray.openhub.mvp.model.Gist;
 import com.thirtydegreesray.openhub.mvp.model.Issue;
 import com.thirtydegreesray.openhub.mvp.model.Repository;
 import com.thirtydegreesray.openhub.mvp.model.SearchModel;
@@ -15,6 +16,9 @@ import com.thirtydegreesray.openhub.mvp.model.User;
 import com.thirtydegreesray.openhub.mvp.model.filter.TrendingSince;
 import com.thirtydegreesray.openhub.ui.fragment.ActivityFragment;
 import com.thirtydegreesray.openhub.ui.fragment.CommitsFragment;
+import com.thirtydegreesray.openhub.ui.fragment.GistCommentsFragment;
+import com.thirtydegreesray.openhub.ui.fragment.GistFilesFragment;
+import com.thirtydegreesray.openhub.ui.fragment.GistsFragment;
 import com.thirtydegreesray.openhub.ui.fragment.IssuesFragment;
 import com.thirtydegreesray.openhub.ui.fragment.MarkdownEditorFragment;
 import com.thirtydegreesray.openhub.ui.fragment.MarkdownPreviewFragment;
@@ -194,6 +198,28 @@ public class FragmentPagerModel {
                         getFragment(fragments, 0, () -> RepositoriesFragment.createForBookmark())),
                 new FragmentPagerModel(context.getString(R.string.users),
                         getFragment(fragments, 1, () -> UserListFragment.createForBookmark()))
+        ));
+    }
+
+    public static List<FragmentPagerModel> createGistPagerList(@NonNull Context context
+            , @NonNull final Gist gist, @NonNull ArrayList<Fragment> fragments) {
+        return setPagerFragmentFlag(Arrays.asList(
+                new FragmentPagerModel(context.getString(R.string.files),
+                        getFragment(fragments, 0, () -> GistFilesFragment.create(gist))),
+                new FragmentPagerModel(context.getString(R.string.comments),
+                        getFragment(fragments, 1, () -> GistCommentsFragment.create(gist.getId())))
+        ));
+    }
+
+    public static List<FragmentPagerModel> createGistsPagerList(
+            @NonNull Context context, @NonNull ArrayList<Fragment> fragments, @NonNull String user) {
+        return setPagerFragmentFlag(Arrays.asList(
+                new FragmentPagerModel(context.getString(R.string.my_gists),
+                        getFragment(fragments, 0, () -> GistsFragment.create(GistsFragment.GistsType.MY, user))),
+                new FragmentPagerModel(context.getString(R.string.starred),
+                        getFragment(fragments, 1, () -> GistsFragment.create(GistsFragment.GistsType.STARRED))),
+                new FragmentPagerModel(context.getString(R.string.public_gists),
+                        getFragment(fragments, 2, () -> GistsFragment.create(GistsFragment.GistsType.PUBLIC)))
         ));
     }
 

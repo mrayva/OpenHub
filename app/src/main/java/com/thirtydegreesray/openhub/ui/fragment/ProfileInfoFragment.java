@@ -21,6 +21,7 @@ import com.thirtydegreesray.openhub.inject.module.FragmentModule;
 import com.thirtydegreesray.openhub.mvp.contract.IProfileInfoContract;
 import com.thirtydegreesray.openhub.mvp.model.User;
 import com.thirtydegreesray.openhub.mvp.presenter.ProfileInfoPresenter;
+import com.thirtydegreesray.openhub.ui.activity.GistsListActivity;
 import com.thirtydegreesray.openhub.ui.activity.ProfileActivity;
 import com.thirtydegreesray.openhub.ui.activity.RepoListActivity;
 import com.thirtydegreesray.openhub.ui.activity.UserListActivity;
@@ -116,8 +117,12 @@ public class ProfileInfoFragment extends BaseFragment<ProfileInfoPresenter>
                 RepoListActivity.show(getContext(), type, mPresenter.getUser().getLogin());
                 break;
             case R.id.gists_lay:
-//                if(mPresenter.getUser().getPublicGists() == 0) return;
-                showInfoToast(getString(R.string.developing));
+                if(mPresenter.getUser().getPublicGists() == 0) return;
+                if(AppData.INSTANCE.getLoggedUser().getLogin().equals(mPresenter.getUser().getLogin())){
+                    GistsListActivity.showMine(getActivity());
+                } else {
+                    GistsListActivity.showForUser(getActivity(), mPresenter.getUser().getLogin());
+                }
                 break;
             case R.id.email:
                 AppOpener.launchEmail(getActivity(), mPresenter.getUser().getEmail());
