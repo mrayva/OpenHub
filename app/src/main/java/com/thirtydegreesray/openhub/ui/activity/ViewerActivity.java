@@ -124,9 +124,12 @@ public class ViewerActivity extends SingleFragmentActivity<IBaseContract.Present
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        if(fileModel != null || commitFile != null || imageUrl != null
-                || ViewerType.Code.equals(viewerType))
-            getMenuInflater().inflate(R.menu.menu_viewer, menu);
+        // Always inflate: ViewerFragment.onPrepareOptionsMenu() unconditionally
+        // looks up every item in this menu (via setHasOptionsMenu(true) in its
+        // onCreate()) regardless of viewerType, so skipping the inflate for
+        // MarkDown/HtmlSource left menu.findItem(...) returning null there,
+        // crashing on the very next .setVisible() call.
+        getMenuInflater().inflate(R.menu.menu_viewer, menu);
         return super.onCreateOptionsMenu(menu);
     }
 

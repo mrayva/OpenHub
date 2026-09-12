@@ -130,7 +130,12 @@ public class ViewerFragment extends BaseFragment<ViewerPresenter>
         MenuItem menuItemOpenInBrowser = menu.findItem(R.id.action_open_in_browser);
         MenuItem menuItemShare = menu.findItem(R.id.action_share);
         MenuItem menuItemCopyUrl = menu.findItem(R.id.action_copy_url);
-        boolean hasHtmlUrl = !ViewerActivity.ViewerType.Code.equals(mPresenter.getViewerType());
+        // Only RepoFile/DiffFile/Image actually carry a real htmlUrl
+        // (fileModel/commitFile/imageUrl) - MarkDown/HtmlSource render a raw
+        // in-memory string with nothing to open/share/copy a URL for.
+        boolean hasHtmlUrl = ViewerActivity.ViewerType.RepoFile.equals(mPresenter.getViewerType())
+                || ViewerActivity.ViewerType.DiffFile.equals(mPresenter.getViewerType())
+                || ViewerActivity.ViewerType.Image.equals(mPresenter.getViewerType());
         menuItemOpenInBrowser.setVisible(hasHtmlUrl);
         menuItemShare.setVisible(hasHtmlUrl);
         menuItemCopyUrl.setVisible(hasHtmlUrl);
@@ -153,6 +158,12 @@ public class ViewerFragment extends BaseFragment<ViewerPresenter>
         } else if(ViewerActivity.ViewerType.Code.equals(mPresenter.getViewerType())) {
             menuItem.setVisible(true);
             menuItem.setChecked(wrap);
+            menuItemDownload.setVisible(false);
+            menuItemViewFile.setVisible(false);
+            menuItemRefresh.setVisible(false);
+        } else {
+            // MarkDown / HtmlSource: no file-specific actions apply.
+            menuItem.setVisible(false);
             menuItemDownload.setVisible(false);
             menuItemViewFile.setVisible(false);
             menuItemRefresh.setVisible(false);
