@@ -438,6 +438,13 @@
     <string name="repo_unignored">%s removed from ignore list</string>
     <string name="apply_ignore_list">Apply ignore list</string>
     <string name="manage_ignore_list">Manage ignore list</string>
+    <string name="export_ignore_list">Export ignore list</string>
+    <string name="import_ignore_list">Import ignore list</string>
+    <string name="ignore_list_empty_export">Ignore list is empty, nothing to export</string>
+    <string name="export_ignore_list_success">Exported %d repo(s)</string>
+    <string name="export_ignore_list_failed">Couldn\'t export the ignore list</string>
+    <string name="import_ignore_list_success">Imported %d repo(s)</string>
+    <string name="import_ignore_list_failed">Couldn\'t import that file</string>
     <string name="today">Today</string>
     <string name="yesterday">Yesterday</string>
 

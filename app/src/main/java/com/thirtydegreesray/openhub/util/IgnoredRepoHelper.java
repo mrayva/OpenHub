@@ -7,9 +7,11 @@ import com.thirtydegreesray.openhub.dao.DaoSession;
 import com.thirtydegreesray.openhub.dao.IgnoredRepo;
 import com.thirtydegreesray.openhub.mvp.model.Repository;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import rx.Observable;
@@ -84,6 +86,33 @@ public class IgnoredRepoHelper {
         ignoredFullNames.remove(fullName);
         final DaoSession daoSession = getDaoSession();
         daoSession.rxTx().run(() -> daoSession.getIgnoredRepoDao().deleteByKey(fullName)).subscribe();
+    }
+
+    /**
+     * For IgnoredReposActivity's export - the full persisted rows (not just
+     * the in-memory fullName set), so the exported file is a lossless,
+     * re-importable copy.
+     */
+    public static Observable<ArrayList<IgnoredRepo>> getAllForExport() {
+        return Observable.fromCallable(() ->
+                new ArrayList<>(getDaoSession().getIgnoredRepoDao().loadAll()))
+                .subscribeOn(Schedulers.io());
+    }
+
+    /**
+     * For IgnoredReposActivity's import - insertOrReplace so re-importing the
+     * same file (or one with overlapping entries) is safe to repeat, then
+     * merge the imported fullNames into the in-memory cache the same way
+     * preload() does.
+     */
+    public static Observable<Integer> importAll(@NonNull List<IgnoredRepo> repos) {
+        return Observable.fromCallable(() -> {
+            getDaoSession().getIgnoredRepoDao().insertOrReplaceInTx(repos);
+            for (IgnoredRepo ignoredRepo : repos) {
+                ignoredFullNames.add(ignoredRepo.getFullName());
+            }
+            return repos.size();
+        }).subscribeOn(Schedulers.io());
     }
 
 }

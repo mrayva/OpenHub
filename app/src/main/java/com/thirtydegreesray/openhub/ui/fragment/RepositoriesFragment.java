@@ -256,6 +256,10 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
         mPresenter.loadRepositories(true, 1);
     }
 
+    public void reload() {
+        mPresenter.loadRepositories(true, 1);
+    }
+
     @Override
     protected String getEmptyTip() {
         if(RepositoriesType.TRENDING.equals(mPresenter.getType())){
