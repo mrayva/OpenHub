@@ -55,6 +55,8 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
     private SearchModel weeklySearchModel;
     private SearchModel monthlySearchModel;
     private SearchModel yearlySearchModel;
+    private SearchModel tenYearsSearchModel;
+    private SearchModel maxSearchModel;
 
     @Override
     protected void initActivity() {
@@ -64,6 +66,8 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
         weeklySearchModel = newSearchModel(TrendingSince.Weekly);
         monthlySearchModel = newSearchModel(TrendingSince.Monthly);
         yearlySearchModel = newSearchModel(TrendingSince.Yearly);
+        tenYearsSearchModel = newSearchModel(TrendingSince.TenYears);
+        maxSearchModel = newSearchModel(TrendingSince.Max);
     }
 
     private SearchModel newSearchModel(TrendingSince since) {
@@ -73,6 +77,10 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
     }
 
     private String buildBaseQuery(TrendingSince since) {
+        if (since == TrendingSince.Max) {
+            // GitHub was founded in 2008 - treat this as "since the beginning".
+            return "created:>2008-01-01";
+        }
         Calendar calendar = Calendar.getInstance();
         switch (since) {
             case Daily:
@@ -83,6 +91,9 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
                 break;
             case Monthly:
                 calendar.add(Calendar.MONTH, -1);
+                break;
+            case TenYears:
+                calendar.add(Calendar.YEAR, -10);
                 break;
             case Yearly:
             default:
@@ -117,6 +128,10 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
                 return weeklySearchModel;
             case Monthly:
                 return monthlySearchModel;
+            case TenYears:
+                return tenYearsSearchModel;
+            case Max:
+                return maxSearchModel;
             case Yearly:
             default:
                 return yearlySearchModel;
@@ -152,7 +167,7 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
         setToolbarBackEnable();
         pagerAdapter.setPagerList(FragmentPagerModel.createCreatedPagerList(
                 getActivity(), getFragments(), dailySearchModel, weeklySearchModel,
-                monthlySearchModel, yearlySearchModel));
+                monthlySearchModel, yearlySearchModel, tenYearsSearchModel, maxSearchModel));
         tabLayout.setVisibility(View.VISIBLE);
         tabLayout.setupWithViewPager(viewPager);
         viewPager.setAdapter(pagerAdapter);
@@ -167,7 +182,7 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
 
     @Override
     public int getPagerSize() {
-        return 4;
+        return 6;
     }
 
     @Override
@@ -188,6 +203,10 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
                 return 2;
             } else if (since.equals(TrendingSince.Yearly)) {
                 return 3;
+            } else if (since.equals(TrendingSince.TenYears)) {
+                return 4;
+            } else if (since.equals(TrendingSince.Max)) {
+                return 5;
             } else {
                 return -1;
             }
