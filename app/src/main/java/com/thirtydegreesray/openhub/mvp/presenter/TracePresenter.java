@@ -49,7 +49,7 @@ public class TracePresenter extends BasePresenter<ITraceContract.View>
                     List<Trace> traceListDb = daoSession.getTraceDao().queryBuilder()
                             .orderDesc(TraceDao.Properties.LatestTime)
                             .offset((page - 1) * 30)
-                            .limit(page * 30)
+                            .limit(30)
                             .list();
                     for (Trace trace : traceListDb) {
                         TraceExt ext = TraceExt.generate(trace);

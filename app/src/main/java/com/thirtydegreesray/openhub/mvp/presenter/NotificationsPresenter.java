@@ -38,6 +38,14 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
     private ArrayList<Notification> notifications;
     private ArrayList<DoubleTypesModel<Repository, Notification>> sortedNotifications;
 
+    // GitHub's default/max per_page for /notifications. The displayed list
+    // is grouped by repo (sortNotifications() injects one extra header row
+    // per distinct repo), so the raw per-page fetch size never lines up with
+    // ListFragment's generic itemCount-modulo auto-judge - canLoadMore is
+    // decided explicitly from this instead (see NotificationsFragment's
+    // setAutoJudgeCanLoadMoreEnable(false)).
+    private static final int NOTIFICATIONS_PAGE_SIZE = 50;
+
     @Inject
     public NotificationsPresenter(DaoSession daoSession) {
         super(daoSession);
@@ -67,17 +75,19 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
             @Override
             public void onSuccess(HttpResponse<ArrayList<Notification>> response) {
                 mView.hideLoading();
+                int rawCount = response.body().size();
                 if (notifications == null || page == 1) {
                     notifications = response.body();
                 } else {
                     notifications.addAll(response.body());
                 }
-                if (response.body().size() == 0 && notifications.size() != 0) {
-                    mView.setCanLoadMore(false);
-                } else {
-                    sortedNotifications = sortNotifications(notifications);
-                    mView.showNotifications(sortedNotifications);
-                }
+                // A raw fetch smaller than a full page means this was the
+                // last page - decided from the raw per-page count, not the
+                // displayed (repo-header-inflated) item count, which the
+                // generic auto-judge can't reason about for a grouped list.
+                mView.setCanLoadMore(rawCount == NOTIFICATIONS_PAGE_SIZE);
+                sortedNotifications = sortNotifications(notifications);
+                mView.showNotifications(sortedNotifications);
             }
         };
 
@@ -85,11 +95,11 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
             @Override
             public Observable<Response<ArrayList<Notification>>> createObservable(boolean forceNetWork) {
                 if (NotificationsFragment.NotificationsType.Unread.equals(type)) {
-                    return getNotificationsService().getMyNotifications(forceNetWork, false, false);
+                    return getNotificationsService().getMyNotifications(forceNetWork, false, false, page);
                 } else if (NotificationsFragment.NotificationsType.Participating.equals(type)) {
-                    return getNotificationsService().getMyNotifications(forceNetWork, true, true);
+                    return getNotificationsService().getMyNotifications(forceNetWork, true, true, page);
                 } else if (NotificationsFragment.NotificationsType.All.equals(type)) {
-                    return getNotificationsService().getMyNotifications(forceNetWork, true, false);
+                    return getNotificationsService().getMyNotifications(forceNetWork, true, false, page);
                 } else {
                     return null;
                 }

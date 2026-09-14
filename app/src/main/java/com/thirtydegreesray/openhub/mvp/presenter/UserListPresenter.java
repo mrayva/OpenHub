@@ -213,7 +213,7 @@ public class UserListPresenter extends BasePagerPresenter<IUserListContract.View
                     .where(TraceDao.Properties.Type.eq("user"))
                     .orderDesc(TraceDao.Properties.LatestTime)
                     .offset((page - 1) * 30)
-                    .limit(page * 30)
+                    .limit(30)
                     .list();
             ArrayList<User> queryUsers = new ArrayList<>();
             for(Trace trace : traces){
@@ -247,7 +247,7 @@ public class UserListPresenter extends BasePagerPresenter<IUserListContract.View
                     .where(BookmarkDao.Properties.Type.eq("user"))
                     .orderDesc(BookmarkDao.Properties.MarkTime)
                     .offset((page - 1) * 30)
-                    .limit(page * 30)
+                    .limit(30)
                     .list();
             ArrayList<User> queryUsers = new ArrayList<>();
             for(Bookmark bookmark : bookmarks){

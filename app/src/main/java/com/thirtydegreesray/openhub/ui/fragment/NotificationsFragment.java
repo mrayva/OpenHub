@@ -49,6 +49,12 @@ public class NotificationsFragment extends ListFragment<NotificationsPresenter, 
     protected void initFragment(Bundle savedInstanceState) {
         super.initFragment(savedInstanceState);
         setLoadMoreEnable(true);
+        // The displayed list is grouped by repo (one extra header row per
+        // distinct repo), so the generic itemCount-modulo auto-judge can't
+        // correctly tell whether a full raw page was fetched - NotificationsPresenter
+        // decides canLoadMore explicitly instead (see its NOTIFICATIONS_PAGE_SIZE
+        // comment).
+        setAutoJudgeCanLoadMoreEnable(false);
         setHasOptionsMenu(NotificationsType.Unread.equals(mPresenter.getType()));
         adapter.setListener(this);
     }
@@ -77,6 +83,12 @@ public class NotificationsFragment extends ListFragment<NotificationsPresenter, 
     @Override
     protected void onReLoadData() {
         mPresenter.loadNotifications(1, true);
+    }
+
+    @Override
+    protected void onLoadMore(int page) {
+        super.onLoadMore(page);
+        mPresenter.loadNotifications(page, false);
     }
 
     @Override

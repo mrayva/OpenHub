@@ -446,7 +446,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     .where(TraceDao.Properties.Type.eq("repo"))
                     .orderDesc(TraceDao.Properties.LatestTime)
                     .offset((page - 1) * 30)
-                    .limit(page * 30)
+                    .limit(30)
                     .list();
 
             ArrayList<Repository> queryRepos = new ArrayList<>();
@@ -482,7 +482,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     .where(BookmarkDao.Properties.Type.eq("repo"))
                     .orderDesc(BookmarkDao.Properties.MarkTime)
                     .offset((page - 1) * 30)
-                    .limit(page * 30)
+                    .limit(30)
                     .list();
 
             ArrayList<Repository> queryRepos = new ArrayList<>();
@@ -512,7 +512,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             List<IgnoredRepo> ignoredRepos = daoSession.getIgnoredRepoDao().queryBuilder()
                     .orderDesc(IgnoredRepoDao.Properties.IgnoredAt)
                     .offset((page - 1) * 30)
-                    .limit(page * 30)
+                    .limit(30)
                     .list();
 
             ArrayList<Repository> queryRepos = new ArrayList<>();

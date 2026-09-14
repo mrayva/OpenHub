@@ -49,7 +49,7 @@ public class BookmarkPresenter extends BasePresenter<IBookmarkContract.View>
                     List<Bookmark> bookmarkList = daoSession.getBookmarkDao().queryBuilder()
                             .orderDesc(BookmarkDao.Properties.MarkTime)
                             .offset((page - 1) * 30)
-                            .limit(page * 30)
+                            .limit(30)
                             .list();
                     for(Bookmark bookmark : bookmarkList){
                         BookmarkExt ext = BookmarkExt.generate(bookmark);

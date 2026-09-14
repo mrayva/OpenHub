@@ -30,7 +30,8 @@ public interface NotificationsService {
     Observable<Response<ArrayList<Notification>>> getMyNotifications(
             @Header("forceNetWork") boolean forceNetWork,
             @Query("all") boolean all,
-            @Query("participating") boolean participating
+            @Query("participating") boolean participating,
+            @Query("page") int page
     );
 
     @NonNull @PATCH("notifications/threads/{threadId}")
