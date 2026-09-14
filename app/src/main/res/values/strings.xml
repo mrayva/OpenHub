@@ -281,6 +281,9 @@
     <string name="issue">Issue</string>
 
     <string name="type">Type</string>
+    <string name="kind">Kind</string>
+    <string name="source_repos">Sources</string>
+    <string name="archived_repos">Archived</string>
     <string name="all">All</string>
     <string name="created">Created</string>
     <string name="assigned">Assigned</string>

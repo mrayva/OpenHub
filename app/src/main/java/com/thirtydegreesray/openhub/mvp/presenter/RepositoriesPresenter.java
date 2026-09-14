@@ -107,6 +107,13 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
 
     private static final int SEARCH_PAGE_SIZE = 30;
 
+    // GitHub's default per_page for the list-repos REST endpoints (Owned/
+    // Public) - RepositoriesFilter.Kind (Sources/Forks/Archived) is applied
+    // client-side against an already-fetched page, so a full server page can
+    // shrink to fewer displayed rows; canLoadMore must be judged from this
+    // raw fetch size instead of the (possibly filtered) displayed count.
+    private static final int OWNED_PUBLIC_PAGE_SIZE = 30;
+
     // Per-topic pagination state for searchMultiTopics() - not @AutoAccess,
     // same as repos: lost on process death, which just means the next load
     // starts fresh from page 1 for every topic, exactly like a first visit.
@@ -224,15 +231,27 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             @Override
             public void onSuccess(@NonNull HttpResponse<ArrayList<Repository>> response) {
                 mView.hideLoading();
+                boolean kindFilterable = RepositoriesFragment.RepositoriesType.OWNED.equals(type)
+                        || RepositoriesFragment.RepositoriesType.PUBLIC.equals(type);
+                ArrayList<Repository> pageItems = response.body();
+                int rawCount = pageItems.size();
+                if (kindFilterable) {
+                    pageItems = filterByKind(pageItems);
+                }
                 int appendedCount;
                 if (isReLoad || readCacheFirst || repos == null || page == 1) {
-                    repos = response.body();
+                    repos = pageItems;
                     appendedCount = 0;
                 } else {
-                    appendedCount = response.body().size();
-                    repos.addAll(response.body());
+                    appendedCount = pageItems.size();
+                    repos.addAll(pageItems);
                 }
-                if (response.body().size() == 0 && repos.size() != 0) {
+                if (kindFilterable) {
+                    // A full raw page can shrink to fewer (or zero) displayed
+                    // rows after filtering - decide purely from the raw size.
+                    mView.setCanLoadMore(rawCount == OWNED_PUBLIC_PAGE_SIZE);
+                    mView.showRepositories(repos, appendedCount);
+                } else if (rawCount == 0 && repos.size() != 0) {
                     mView.setCanLoadMore(false);
                 } else {
                     mView.showRepositories(repos, appendedCount);
@@ -259,6 +278,26 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
     public void setForksSort(String sort) {
         this.forksSort = sort;
         loadRepositories(true, 1);
+    }
+
+    private ArrayList<Repository> filterByKind(ArrayList<Repository> items) {
+        RepositoriesFilter.Kind kind = filter == null ? RepositoriesFilter.Kind.All : filter.getKind();
+        if (RepositoriesFilter.Kind.All.equals(kind)) return items;
+        ArrayList<Repository> filtered = new ArrayList<>();
+        for (Repository repository : items) {
+            switch (kind) {
+                case Sources:
+                    if (!repository.isFork()) filtered.add(repository);
+                    break;
+                case Forks:
+                    if (repository.isFork()) filtered.add(repository);
+                    break;
+                case Archived:
+                    if (repository.isArchived()) filtered.add(repository);
+                    break;
+            }
+        }
+        return filtered;
     }
 
     private Observable<Response<ArrayList<Repository>>> getObservable(boolean forceNetWork, int page) {

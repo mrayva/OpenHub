@@ -33,6 +33,16 @@ public class RepositoriesFilter implements Parcelable {
         Created, Updated, Pushed, Full_name
     }
 
+    /**
+     * Client-side only - GitHub's list-repos REST endpoints have no
+     * fork/archived query param, so this is applied by RepositoriesPresenter
+     * against the already-fetched Repository.isFork()/isArchived() fields,
+     * unlike Type/Sort above which are sent to the server as-is.
+     */
+    public enum Kind{
+        All, Sources, Forks, Archived
+    }
+
     private final static Map<Integer, Type> TYPE_RELATION = new HashMap<>();
     static {
         TYPE_RELATION.put(R.id.nav_all, Type.All);
@@ -42,9 +52,18 @@ public class RepositoriesFilter implements Parcelable {
         TYPE_RELATION.put(R.id.nav_member, Type.Member);
     }
 
+    private final static Map<Integer, Kind> KIND_RELATION = new HashMap<>();
+    static {
+        KIND_RELATION.put(R.id.nav_kind_all, Kind.All);
+        KIND_RELATION.put(R.id.nav_kind_sources, Kind.Sources);
+        KIND_RELATION.put(R.id.nav_kind_forks, Kind.Forks);
+        KIND_RELATION.put(R.id.nav_kind_archived, Kind.Archived);
+    }
+
     private Type type = Type.All;
     private Sort sort = Sort.Full_name;
     private SortDirection sortDirection = SortDirection.Asc;
+    private Kind kind = Kind.All;
 
     public static RepositoriesFilter generateFromDrawer(@NonNull NavigationView navView){
         RepositoriesFilter filter = new RepositoriesFilter();
@@ -96,6 +115,10 @@ public class RepositoriesFilter implements Parcelable {
         filter.sort = sort;
         filter.sortDirection = sortDirection;
 
+        MenuItem kindItem = ViewUtils.getSelectedMenu(navView.getMenu().findItem(R.id.nav_kind_chooser));
+        filter.kind = kindItem != null && KIND_RELATION.containsKey(kindItem.getItemId())
+                ? KIND_RELATION.get(kindItem.getItemId()) : Kind.All;
+
         return filter;
     }
 
@@ -133,6 +156,10 @@ public class RepositoriesFilter implements Parcelable {
         return sortDirection.name().toLowerCase();
     }
 
+    public Kind getKind() {
+        return kind == null ? Kind.All : kind;
+    }
+
     private RepositoriesFilter setType(Type type) {
         this.type = type;
         return this;
@@ -158,6 +185,7 @@ public class RepositoriesFilter implements Parcelable {
         dest.writeInt(this.type == null ? -1 : this.type.ordinal());
         dest.writeInt(this.sort == null ? -1 : this.sort.ordinal());
         dest.writeInt(this.sortDirection == null ? -1 : this.sortDirection.ordinal());
+        dest.writeInt(this.kind == null ? -1 : this.kind.ordinal());
     }
 
     public RepositoriesFilter() {
@@ -170,6 +198,8 @@ public class RepositoriesFilter implements Parcelable {
         this.sort = tmpSort == -1 ? null : Sort.values()[tmpSort];
         int tmpSortDirection = in.readInt();
         this.sortDirection = tmpSortDirection == -1 ? null : SortDirection.values()[tmpSortDirection];
+        int tmpKind = in.readInt();
+        this.kind = tmpKind == -1 ? null : Kind.values()[tmpKind];
     }
 
     public static final Parcelable.Creator<RepositoriesFilter> CREATOR = new Parcelable.Creator<RepositoriesFilter>() {

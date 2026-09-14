@@ -248,6 +248,15 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
             ItemTouchHelperCallback callback = new ItemTouchHelperCallback(
                     0, ItemTouchHelper.LEFT | ItemTouchHelper.RIGHT, this);
             new ItemTouchHelper(callback).attachToRecyclerView(recyclerView);
+        } else if (RepositoriesType.OWNED.equals(mPresenter.getType())
+                || RepositoriesType.PUBLIC.equals(mPresenter.getType())) {
+            // RepositoriesFilter.Kind (Sources/Forks/Archived) is applied
+            // client-side by the presenter, which can shrink a full raw page
+            // down to fewer displayed rows - same reasoning as the
+            // ignoreListEligible branch above, so canLoadMore must come from
+            // RepositoriesPresenter's explicit judgement, not this fragment's
+            // itemCount-based auto-judge.
+            setAutoJudgeCanLoadMoreEnable(false);
         }
     }
 

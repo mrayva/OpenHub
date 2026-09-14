@@ -26,6 +26,28 @@
         </menu>
     </item>
 
+    <item
+        android:id="@+id/nav_kind_chooser"
+        android:title="@string/kind">
+        <menu>
+            <group android:checkableBehavior="single">
+                <item
+                    android:id="@+id/nav_kind_all"
+                    android:title="@string/all"
+                    android:checked="true"/>
+                <item
+                    android:id="@+id/nav_kind_sources"
+                    android:title="@string/source_repos"/>
+                <item
+                    android:id="@+id/nav_kind_forks"
+                    android:title="@string/forks"/>
+                <item
+                    android:id="@+id/nav_kind_archived"
+                    android:title="@string/archived_repos"/>
+            </group>
+        </menu>
+    </item>
+
     <!--created, updated, pushed, full_name.-->
     <item
         android:id="@+id/nav_sort"
