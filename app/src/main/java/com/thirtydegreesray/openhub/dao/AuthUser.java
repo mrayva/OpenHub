@@ -41,7 +41,7 @@ public class AuthUser implements Parcelable {
     }
 
     @Generated
-    public AuthUser(String accessToken, java.util.Date authTime, int expireIn, String scope, boolean selected, String loginId, String name, String avatar) {
+    public AuthUser(String accessToken, java.util.Date authTime, long expireIn, String scope, boolean selected, String loginId, String name, String avatar) {
         this.accessToken = accessToken;
         this.authTime = authTime;
         this.expireIn = expireIn;
@@ -76,7 +76,7 @@ public class AuthUser implements Parcelable {
         return expireIn;
     }
 
-    public void setExpireIn(int expireIn) {
+    public void setExpireIn(long expireIn) {
         this.expireIn = expireIn;
     }
 
@@ -145,7 +145,7 @@ public class AuthUser implements Parcelable {
         this.accessToken = in.readString();
         long tmpAuthTime = in.readLong();
         this.authTime = tmpAuthTime == -1 ? null : new Date(tmpAuthTime);
-        this.expireIn = in.readInt();
+        this.expireIn = in.readLong();
         this.scope = in.readString();
         this.selected = in.readByte() != 0;
         this.loginId = in.readString();

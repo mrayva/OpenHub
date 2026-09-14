@@ -87,6 +87,28 @@ public class Release implements Parcelable {
         this.zipballUrl = zipballUrl;
     }
 
+    /**
+     * The raw tarball_url/zipball_url point at api.github.com's redirect
+     * endpoint (.../tarball/{ref}), which Android's DownloadManager doesn't
+     * always follow/authenticate against reliably. Rewriting to the same
+     * direct codeload URL shape GitHub's own "Download ZIP" web button uses
+     * (github.com/{owner}/{repo}/archive/refs/tags/{tag}.{ext}) is simpler
+     * and more reliable for a DownloadManager-based download.
+     */
+    public String getTarballUrlWrap() {
+        if (tarballUrl == null) return null;
+        return tarballUrl.replace("https://api.github.com/repos", "https://github.com")
+                .replace("tarball", "archive/refs/tags")
+                + ".tar.gz";
+    }
+
+    public String getZipballUrlWrap() {
+        if (zipballUrl == null) return null;
+        return zipballUrl.replace("https://api.github.com/repos", "https://github.com")
+                .replace("zipball", "archive/refs/tags")
+                + ".zip";
+    }
+
     public boolean isDraft() {
         return draft;
     }

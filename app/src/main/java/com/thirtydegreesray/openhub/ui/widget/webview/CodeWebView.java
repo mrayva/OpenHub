@@ -118,7 +118,7 @@ public class CodeWebView extends WebView {
         settings.setBuiltInZoomControls(true);
         settings.setDisplayZoomControls(false);
         String html = HtmlHelper.generateImageHtml(url, getCodeBackgroundColor());
-        loadData(html, "text/html", null);
+        loadHtml(html);
     }
 
     public void setHtmlSource(@NonNull String htmlSource) {
@@ -130,7 +130,7 @@ public class CodeWebView extends WebView {
         settings.setDisplayZoomControls(false);
         String html = HtmlHelper.generateHtmlSourceHtml(htmlSource,
                 getCodeBackgroundColor(), getAccentColor());
-        loadData(html, "text/html", null);
+        loadHtml(html);
     }
 
     public void setMdSource(@NonNull String source, @Nullable String baseUrl) {
@@ -181,6 +181,17 @@ public class CodeWebView extends WebView {
 
     private void loadPage(String page) {
         loadPageWithBaseUrl("file:///android_asset/code_prettify/", page);
+    }
+
+    /**
+     * loadData(html, "text/html", null) (no base URL) gives the content an
+     * opaque/unique origin, which WebView treats with stricter network
+     * restrictions than a normal origin - remote resources referenced from
+     * it (e.g. loadImage()'s <img src="...">) can silently fail to load.
+     * loadDataWithBaseURL gives it a real origin instead.
+     */
+    private void loadHtml(String html) {
+        loadPageWithBaseUrl("file:///android_asset/", html);
     }
 
     private boolean hitLinkResult(WebView.HitTestResult result) {
