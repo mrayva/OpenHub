@@ -55,6 +55,9 @@ public class PrefUtils {
     public final static String CODE_WRAP = "codeWrap";
     public final static String CUSTOM_TABS_ENABLE = "customTabsEnable";
     public final static String IGNORE_LIST_APPLIED = "ignoreListApplied";
+    public final static String FONT_SCALE = "fontScale";
+    public final static String CRASH_LOGGING_ENABLE = "crashLoggingEnable";
+    public final static String LAST_SHOWN_CRASH_TIME = "lastShownCrashTime";
 
 
     public final static String POP_TIMES = "popTimes";
@@ -117,6 +120,18 @@ public class PrefUtils {
 
     public static String getLanguage(){
         return getDefaultSp(AppApplication.get()).getString(LANGUAGE, "en");
+    }
+
+    public static String getFontSize(){
+        return getDefaultSp(AppApplication.get()).getString(FONT_SCALE, "normal");
+    }
+
+    public static boolean isCrashLoggingEnable(){
+        return getDefaultSp(AppApplication.get()).getBoolean(CRASH_LOGGING_ENABLE, true);
+    }
+
+    public static long getLastShownCrashTime(){
+        return getDefaultSp(AppApplication.get()).getLong(LAST_SHOWN_CRASH_TIME, 0);
     }
 
     public static String getStartPage(){

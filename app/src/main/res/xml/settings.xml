@@ -50,6 +50,11 @@
         android:widgetLayout="@layout/preference_widget_switch_material3" />
 
     <Preference
+        android:icon="@drawable/ic_format_size"
+        android:title="@string/font_size"
+        android:key="fontSize"/>
+
+    <Preference
         android:icon="@drawable/ic_language"
         android:title="@string/language"
         android:key="language"/>
@@ -58,5 +63,18 @@
         android:icon="@drawable/ic_search_title"
         android:title="@string/clear_search_history"
         android:key="clearSearchHistory"/>
+
+    <SwitchPreference
+        android:icon="@drawable/ic_error"
+        android:title="@string/crash_logging"
+        android:summary="@string/crash_logging_desc"
+        android:key="crashLoggingEnable"
+        android:defaultValue="true"
+        android:widgetLayout="@layout/preference_widget_switch_material3" />
+
+    <Preference
+        android:icon="@drawable/ic_error"
+        android:title="@string/view_last_crash"
+        android:key="viewLastCrash"/>
 
 </PreferenceScreen>

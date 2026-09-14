@@ -19,6 +19,7 @@ import com.thirtydegreesray.openhub.inject.component.DaggerAppComponent;
 import com.thirtydegreesray.openhub.inject.module.AppModule;
 import com.thirtydegreesray.openhub.service.NetBroadcastReceiver;
 import com.thirtydegreesray.openhub.util.AppUtils;
+import com.thirtydegreesray.openhub.util.CrashHandler;
 import com.thirtydegreesray.openhub.util.IgnoredRepoHelper;
 import com.thirtydegreesray.openhub.util.NetHelper;
 
@@ -43,6 +44,9 @@ public class AppApplication extends Application {
     public void onCreate() {
         super.onCreate();
         application = this;
+        // Always installed - CrashHandler itself checks PrefUtils.isCrashLoggingEnable()
+        // at crash time, so the Settings switch takes effect without an app restart.
+        CrashHandler.install(this);
         //init application
         long startTime = System.currentTimeMillis();
         AppData.INSTANCE.getSystemDefaultLocal();

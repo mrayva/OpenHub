@@ -12,8 +12,11 @@ import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.R2;
 import com.thirtydegreesray.openhub.ui.widget.colorChooser.ColorChooserPreference;
+import com.thirtydegreesray.openhub.util.AppUtils;
+import com.thirtydegreesray.openhub.util.CrashHandler;
 import com.thirtydegreesray.openhub.util.PrefUtils;
 
+import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
@@ -66,6 +69,8 @@ public class SettingsFragment extends PreferenceFragmentCompat
 //        findPreference(PrefUtils.LOGOUT).setOnPreferenceClickListener(this);
         findPreference(PrefUtils.START_PAGE).setOnPreferenceClickListener(this);
         findPreference("clearSearchHistory").setOnPreferenceClickListener(this);
+        findPreference("fontSize").setOnPreferenceClickListener(this);
+        findPreference("viewLastCrash").setOnPreferenceClickListener(this);
         findPreference(PrefUtils.START_PAGE).setSummary(nameList.get(getStartPageIndex()));
         ((ColorChooserPreference) findPreference(PrefUtils.ACCENT_COLOR))
                 .setColorChooserCallback(this);
@@ -94,8 +99,53 @@ public class SettingsFragment extends PreferenceFragmentCompat
             case "clearSearchHistory":
                 showClearSearchHistoryDialog();
                 return true;
+            case "fontSize":
+                showFontSizeChooser();
+                return true;
+            case "viewLastCrash":
+                showLastCrashDialog();
+                return true;
         }
         return false;
+    }
+
+    private void showFontSizeChooser() {
+        final List<String> valueList
+                = Arrays.asList(getResources().getStringArray(R.array.font_size_id_array));
+        String fontSize = PrefUtils.getFontSize();
+        int selectIndex = valueList.indexOf(fontSize);
+        new MaterialAlertDialogBuilder(requireContext(), R.style.DialogStyle_OpenHub_Settings)
+                .setCancelable(true)
+                .setTitle(R.string.font_size)
+                .setSingleChoiceItems(R.array.font_size_array, selectIndex, (dialog1, which) -> {
+                    dialog1.dismiss();
+                    PrefUtils.set(PrefUtils.FONT_SCALE, valueList.get(which));
+                    recreateMain();
+                })
+                .show();
+    }
+
+    private void showLastCrashDialog() {
+        File lastCrash = CrashHandler.getLastCrashFile(requireContext());
+        String content = lastCrash == null ? null : CrashHandler.readCrashFile(lastCrash);
+        MaterialAlertDialogBuilder builder = new MaterialAlertDialogBuilder(
+                requireContext(), R.style.DialogStyle_OpenHub_Settings)
+                .setCancelable(true)
+                .setTitle(R.string.last_crash_title)
+                .setNegativeButton(R.string.close, (dialog, which) -> dialog.dismiss());
+        if (content == null || content.isEmpty()) {
+            builder.setMessage(R.string.no_crash_recorded);
+        } else {
+            builder.setMessage(content)
+                    .setPositiveButton(R.string.copy, (dialog, which) ->
+                            AppUtils.copyToClipboard(requireContext(), content))
+                    .setNeutralButton(R.string.clear, (dialog, which) -> {
+                        CrashHandler.clearCrashFiles(requireContext());
+                        android.widget.Toast.makeText(getContext(), R.string.crash_log_cleared,
+                                android.widget.Toast.LENGTH_SHORT).show();
+                    });
+        }
+        builder.show();
     }
 
     private void showThemeChooser() {

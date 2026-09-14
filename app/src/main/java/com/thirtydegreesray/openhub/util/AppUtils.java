@@ -83,6 +83,36 @@ public class AppUtils {
         resources.updateConfiguration(configuration, resources.getDisplayMetrics());
     }
 
+    /**
+     * Same "mutate the live Configuration/Resources in place" approach as
+     * updateResourcesLegacy() above (already how this app applies language
+     * per-activity) - simpler than an attachBaseContext/createConfigurationContext
+     * wrapper, and consistent with the existing pattern.
+     */
+    public static void updateFontScale(@NonNull Context context) {
+        float scale = getFontScaleValue(PrefUtils.getFontSize());
+        Resources resources = context.getResources();
+        Configuration configuration = resources.getConfiguration();
+        if (configuration.fontScale != scale) {
+            configuration.fontScale = scale;
+            resources.updateConfiguration(configuration, resources.getDisplayMetrics());
+        }
+    }
+
+    public static float getFontScaleValue(@NonNull String fontSize) {
+        switch (fontSize) {
+            case "small":
+                return 0.85f;
+            case "large":
+                return 1.15f;
+            case "extra_large":
+                return 1.3f;
+            case "normal":
+            default:
+                return 1.0f;
+        }
+    }
+
     @NonNull
     public static Locale getLocale(String language) {
         Locale locale;

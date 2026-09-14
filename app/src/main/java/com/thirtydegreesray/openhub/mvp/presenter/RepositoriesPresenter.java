@@ -46,12 +46,15 @@ import org.jsoup.nodes.TextNode;
 import org.jsoup.select.Elements;
 
 import java.io.IOException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -905,6 +908,15 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                                 }
                             }
                         }
+                        // The page returned something but none of it matched
+                        // this scraper's expected structure (elements.size()
+                        // was 0, or every per-row parse failed) - GitHub
+                        // likely changed the trending page's HTML, so treat
+                        // this the same as a parse exception rather than
+                        // silently showing an empty list.
+                        if (repos.isEmpty()) {
+                            repos = null;
+                        }
                     } catch (Exception e){
                         e.printStackTrace();
                         repos = null;
@@ -924,12 +936,89 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                         mView.hideLoading();
                         mView.showRepositories(repos, 0);
                     } else {
+                        loadTrendingViaSearchFallback();
+                    }
+                });
+    }
+
+    /**
+     * GitHub's trending page has no REST/Search-API equivalent - "stars
+     * gained in period" is computed server-side and isn't exposed anywhere
+     * scrapeable-free, so this can't be a full replacement for the real
+     * thing. But when the scraper above can't parse the page at all
+     * (elements.size() was 0, or every per-row parse failed - almost always
+     * because GitHub changed the trending page's HTML), showing a dead
+     * "parse error" screen until this scraper gets updated is worse than an
+     * approximation: recently-created repos sorted by stars, the same
+     * search-API mechanism CreatedActivity's tabs already use. Only ever
+     * called with since == Daily/Weekly/Monthly (real Trending never
+     * constructs Yearly/TenYears/Max), so those are the only cases handled.
+     */
+    private void loadTrendingViaSearchFallback() {
+        Calendar calendar = Calendar.getInstance();
+        switch (since) {
+            case Daily:
+                calendar.add(Calendar.DAY_OF_YEAR, -1);
+                break;
+            case Weekly:
+                calendar.add(Calendar.WEEK_OF_YEAR, -1);
+                break;
+            case Monthly:
+            default:
+                calendar.add(Calendar.MONTH, -1);
+                break;
+        }
+        String date = new SimpleDateFormat("yyyy-MM-dd", Locale.US).format(calendar.getTime());
+        StringBuilder query = new StringBuilder("created:>").append(date);
+        String slug = language == null ? null : language.getSlug();
+        if (slug != null && !slug.isEmpty() && !"unknown".equals(slug) && !"all".equals(slug)) {
+            query.append(" language:").append(encodeLanguageSlug(slug));
+        }
+
+        HttpObserver<SearchResult<Repository>> httpObserver =
+                new HttpObserver<SearchResult<Repository>>() {
+                    @Override
+                    public void onError(@NonNull Throwable error) {
+                        mView.hideLoading();
                         String errorTip = String.format(getString(R.string.github_page_parse_error),
                                 getString(R.string.trending));
                         mView.showLoadError(errorTip);
-                        mView.hideLoading();
                     }
-                });
+
+                    @Override
+                    public void onSuccess(@NonNull HttpResponse<SearchResult<Repository>> response) {
+                        mView.hideLoading();
+                        ArrayList<Repository> items = response.body().getItems();
+                        if (ignoreListEligible && PrefUtils.isIgnoreListApplied()) {
+                            items = filterIgnored(items);
+                        }
+                        repos = items;
+                        mView.showRepositories(repos, 0);
+                    }
+                };
+
+        generalRxHttpExecute(new IObservableCreator<SearchResult<Repository>>() {
+            @Nullable
+            @Override
+            public Observable<Response<SearchResult<Repository>>> createObservable(boolean forceNetWork) {
+                return getSearchService().searchRepos(query.toString(), "stars", "desc", 1);
+            }
+        }, httpObserver);
+    }
+
+    /**
+     * SearchService's "q" param is sent with @Query(encoded = true), so it is
+     * never percent-encoded by Retrofit/OkHttp. Language slugs like "c++" or
+     * "c#" contain characters (+, #) that are legal-but-meaningful in a URL
+     * query component - a literal "+" is read back by GitHub as a space - so
+     * they must be percent-encoded by hand before being appended.
+     */
+    private String encodeLanguageSlug(String slug) {
+        try {
+            return java.net.URLEncoder.encode(slug, "UTF-8");
+        } catch (java.io.UnsupportedEncodingException e) {
+            return slug;
+        }
     }
 
     private Repository parseTrendingRepositoryData(Element element) throws Exception{

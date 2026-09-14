@@ -84,6 +84,7 @@ BaseActivity<P extends IBaseContract.Presenter>
 
         ThemeHelper.apply(this);
         AppUtils.updateAppLanguage(getActivity());
+        AppUtils.updateFontScale(getActivity());
         super.onCreate(savedInstanceState);
         isAlive = true;
         setupActivityComponent(getAppComponent());

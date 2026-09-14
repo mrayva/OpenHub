@@ -7,6 +7,7 @@ import android.content.res.TypedArray;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.tabs.TabLayout;
 import androidx.fragment.app.Fragment;
 import androidx.appcompat.app.AlertDialog;
@@ -41,8 +42,12 @@ import com.thirtydegreesray.openhub.ui.fragment.TopicsFragment;
 import com.thirtydegreesray.openhub.ui.fragment.TraceFragment;
 import com.thirtydegreesray.openhub.ui.fragment.base.BaseFragment;
 import com.thirtydegreesray.openhub.ui.widget.NewYearWishesDialog;
+import com.thirtydegreesray.openhub.util.AppUtils;
+import com.thirtydegreesray.openhub.util.CrashHandler;
 import com.thirtydegreesray.openhub.util.PrefUtils;
 import com.thirtydegreesray.openhub.util.StringUtils;
+
+import java.io.File;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -186,6 +191,29 @@ public class MainActivity extends BaseDrawerActivity<MainPresenter>
         mail.setText(StringUtils.isBlank(loginUser.getBio()) ? joinTime : loginUser.getBio());
 
         tabLayout.setVisibility(View.GONE);
+        checkLastCrash();
+    }
+
+    /**
+     * One-time popup for a crash that happened on a previous run - compares
+     * the newest crash file's timestamp against the last one already shown,
+     * so this only fires once per new crash, not on every MainActivity visit.
+     */
+    private void checkLastCrash() {
+        File lastCrash = CrashHandler.getLastCrashFile(getActivity());
+        if (lastCrash == null || lastCrash.lastModified() <= PrefUtils.getLastShownCrashTime()) {
+            return;
+        }
+        String content = CrashHandler.readCrashFile(lastCrash);
+        new MaterialAlertDialogBuilder(getActivity())
+                .setCancelable(true)
+                .setTitle(R.string.last_crash_title)
+                .setMessage(content)
+                .setPositiveButton(R.string.copy, (dialog, which) ->
+                        AppUtils.copyToClipboard(getActivity(), content))
+                .setNegativeButton(R.string.close, (dialog, which) -> dialog.dismiss())
+                .show();
+        PrefUtils.set(PrefUtils.LAST_SHOWN_CRASH_TIME, lastCrash.lastModified());
     }
 
     @Override

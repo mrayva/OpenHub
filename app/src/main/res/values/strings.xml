@@ -79,8 +79,15 @@
     <string name="custom_tabs_desc">Open in custom tabs instead of outer browser(support chrome, firefox…)</string>
     <string name="use_custom_tabs_tips">If you want to open in outer browser directly, you could change in settings.</string>
     <string name="language">Language</string>
+    <string name="font_size">Font size</string>
     <string name="logout">Logout</string>
     <string name="clear_search_history">Clear search history</string>
+    <string name="crash_logging">Crash logging</string>
+    <string name="crash_logging_desc">Save a local log when the app crashes, for troubleshooting</string>
+    <string name="view_last_crash">View last crash</string>
+    <string name="last_crash_title">Last crash</string>
+    <string name="no_crash_recorded">No crash has been recorded</string>
+    <string name="crash_log_cleared">Crash log cleared</string>
     <string name="clear_search_history_confirm">Are you sure you want to clear all search history?</string>
     <string name="delete_search_record_confirm">Delete this search record?</string>
 
@@ -99,6 +106,8 @@
     <string name="open_in_browser">Open in browser</string>
     <string name="copy_url">Copy URL</string>
     <string name="copy_clone_url">Copy clone URL</string>
+    <string name="copy">Copy</string>
+    <string name="clear">Clear</string>
     <string name="watch">Watch</string>
     <string name="watched">Watched</string>
     <string name="unwatch">Unwatch</string>
