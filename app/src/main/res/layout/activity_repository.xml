@@ -101,6 +101,7 @@
             android:layout_height="wrap_content"
             android:visibility="visible"
             app:tabTextAppearance="@style/TextAppearance.Design.Tab"
+            app:tabTextColor="?subtitle_color"
             app:tabSelectedTextColor="?title_color" />
 
     </com.google.android.material.appbar.AppBarLayout>

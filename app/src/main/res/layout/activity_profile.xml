@@ -104,6 +104,7 @@
             android:layout_width="match_parent"
             android:layout_height="50dp"
             android:visibility="visible"
+            app:tabTextColor="?subtitle_color"
             app:tabSelectedTextColor="?title_color"
             app:tabTextAppearance="@style/TextAppearance.Design.Tab" />
 

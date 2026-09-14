@@ -143,6 +143,7 @@
             app:tabGravity="fill"
             app:tabMode="fixed"
             app:tabTextAppearance="@style/TextAppearance.Design.Tab"
+            app:tabTextColor="?subtitle_color"
             app:tabSelectedTextColor="?title_color"/>
 
     </com.google.android.material.appbar.AppBarLayout>
