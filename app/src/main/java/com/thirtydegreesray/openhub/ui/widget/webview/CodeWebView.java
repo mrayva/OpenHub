@@ -225,7 +225,13 @@ public class CodeWebView extends WebView {
 
     private void startActivity(Uri uri){
         if(uri == null) return;
-        AppOpener.launchUrl(getContext(), uri);
+        try {
+            AppOpener.launchUrl(getContext(), uri);
+        } catch (android.content.ActivityNotFoundException e) {
+            // The chosen custom-tabs / browser package can disappear between
+            // selection and launch (uninstall mid-tap, etc.). Swallow the
+            // exception so the host activity does not crash.
+        }
     }
 }
 

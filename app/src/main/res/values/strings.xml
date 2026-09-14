@@ -450,6 +450,13 @@
     <string name="export_ignore_list_failed">Couldn\'t export the ignore list</string>
     <string name="import_ignore_list_success">Imported %d repo(s)</string>
     <string name="import_ignore_list_failed">Couldn\'t import that file</string>
+    <string name="export_bookmarks">Export bookmarks</string>
+    <string name="import_bookmarks">Import bookmarks</string>
+    <string name="bookmarks_empty_export">Bookmarks are empty, nothing to export</string>
+    <string name="export_bookmarks_success">Exported %d bookmark(s)</string>
+    <string name="export_bookmarks_failed">Couldn\'t export bookmarks</string>
+    <string name="import_bookmarks_success">Imported %d bookmark(s)</string>
+    <string name="import_bookmarks_failed">Couldn\'t import that file</string>
     <string name="today">Today</string>
     <string name="yesterday">Yesterday</string>
 

@@ -198,7 +198,16 @@ public class AppOpener {
             repoName = gitHubName.getRepoName();
         }
 
-        if(GitHubHelper.isUserUrl(url)){
+        if(userName == null){
+            // Bare github.com (no user/repo path segments) still matches
+            // isUserUrl() below because USER_PATTERN's segment is "zero or
+            // more" - without this guard that falls through to
+            // ProfileActivity.show(context, null), which errors. Route home
+            // instead, matching what a user tapping a bare github.com link
+            // actually expects.
+            context.startActivity(new android.content.Intent(context,
+                    com.thirtydegreesray.openhub.ui.activity.SplashActivity.class));
+        } else if(GitHubHelper.isUserUrl(url)){
             ProfileActivity.show((Activity) context, userName);
         } else if(GitHubHelper.isRepoUrl(url)){
             RepositoryActivity.show(context, userName, repoName);
