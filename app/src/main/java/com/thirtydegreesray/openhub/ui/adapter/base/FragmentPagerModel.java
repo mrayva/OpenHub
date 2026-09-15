@@ -24,6 +24,7 @@ import com.thirtydegreesray.openhub.ui.fragment.MarkdownEditorFragment;
 import com.thirtydegreesray.openhub.ui.fragment.MarkdownPreviewFragment;
 import com.thirtydegreesray.openhub.ui.fragment.NotificationsFragment;
 import com.thirtydegreesray.openhub.ui.fragment.ProfileInfoFragment;
+import com.thirtydegreesray.openhub.ui.fragment.ReleasesFragment;
 import com.thirtydegreesray.openhub.ui.fragment.RepoFilesFragment;
 import com.thirtydegreesray.openhub.ui.fragment.RepoInfoFragment;
 import com.thirtydegreesray.openhub.ui.fragment.RepoTopicsFragment;
@@ -74,7 +75,11 @@ public class FragmentPagerModel {
                                 () -> ActivityFragment.create(ActivityFragment.ActivityType.Repository,
                                 repository.getOwner().getLogin(), repository.getName()))),
                 new FragmentPagerModel(context.getString(R.string.repo_topics_tab),
-                        getFragment(fragments, 4, () -> RepoTopicsFragment.create(repository)))
+                        getFragment(fragments, 4, () -> RepoTopicsFragment.create(repository))),
+                new FragmentPagerModel(context.getString(R.string.releases),
+                        getFragment(fragments, 5,
+                                () -> ReleasesFragment.create(repository.getOwner().getLogin(),
+                                repository.getName())))
         ));
     }
 

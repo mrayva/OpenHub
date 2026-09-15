@@ -1,6 +1,7 @@
 package com.thirtydegreesray.openhub.mvp.contract;
 
 import com.thirtydegreesray.openhub.mvp.contract.base.IBaseContract;
+import com.thirtydegreesray.openhub.mvp.contract.base.IBasePagerContract;
 import com.thirtydegreesray.openhub.mvp.model.Release;
 
 import java.util.ArrayList;
@@ -11,13 +12,13 @@ import java.util.ArrayList;
 
 public interface IReleasesContract {
 
-    interface View extends IBaseContract.View{
+    interface View extends IBaseContract.View, IBasePagerContract.View{
         void showReleases(ArrayList<Release> releases);
         void setCanLoadMore(boolean canLoadMore);
         void showLoadError(String error);
     }
 
-    interface Presenter extends IBaseContract.Presenter<IReleasesContract.View>{
+    interface Presenter extends IBasePagerContract.Presenter<IReleasesContract.View>{
         void loadReleases(int page, boolean isReload);
     }
 

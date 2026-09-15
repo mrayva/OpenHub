@@ -66,6 +66,12 @@ public class ReleasesFragment extends ListFragment<ReleasesPresenter, ReleasesAd
     }
 
     @Override
+    public void onFragmentShowed() {
+        super.onFragmentShowed();
+        if(mPresenter != null) mPresenter.prepareLoadData();
+    }
+
+    @Override
     protected void onReLoadData() {
         mPresenter.loadReleases(1, true);
     }

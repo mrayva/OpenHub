@@ -40,6 +40,7 @@ import com.thirtydegreesray.openhub.ui.adapter.base.BaseViewHolder;
 import com.thirtydegreesray.openhub.ui.adapter.base.FragmentPagerModel;
 import com.thirtydegreesray.openhub.ui.fragment.ActivityFragment;
 import com.thirtydegreesray.openhub.ui.fragment.CommitsFragment;
+import com.thirtydegreesray.openhub.ui.fragment.ReleasesFragment;
 import com.thirtydegreesray.openhub.ui.fragment.RepoFilesFragment;
 import com.thirtydegreesray.openhub.ui.fragment.RepoInfoFragment;
 import com.thirtydegreesray.openhub.ui.fragment.RepoTopicsFragment;
@@ -161,9 +162,6 @@ public class RepositoryActivity extends PagerActivity<RepositoryPresenter>
                 return true;
             case R.id.action_fork:
                 if(!mPresenter.getRepository().isFork()) forkRepo();
-                return true;
-            case R.id.action_releases:
-                showReleases();
                 return true;
             case R.id.action_wiki:
                 WikiActivity.show(getActivity(), mPresenter.getRepository().getOwner().getLogin(),
@@ -311,11 +309,6 @@ public class RepositoryActivity extends PagerActivity<RepositoryPresenter>
                 }).show();
     }
 
-    private void showReleases(){
-        ReleasesActivity.show(getActivity(), mPresenter.getRepository().getOwner().getLogin(),
-                mPresenter.getRepository().getName());
-    }
-
     @Override
     public void showLoading() {
         super.showLoading();
@@ -356,7 +349,7 @@ public class RepositoryActivity extends PagerActivity<RepositoryPresenter>
 
     @Override
     public int getPagerSize() {
-        return 5;
+        return 6;
     }
 
     @Override
@@ -371,6 +364,8 @@ public class RepositoryActivity extends PagerActivity<RepositoryPresenter>
             return 3;
         }else if(fragment instanceof RepoTopicsFragment){
             return 4;
+        }else if(fragment instanceof ReleasesFragment){
+            return 5;
         }else
             return -1;
     }

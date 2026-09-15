@@ -6,7 +6,7 @@ import com.thirtydegreesray.openhub.http.core.HttpObserver;
 import com.thirtydegreesray.openhub.http.core.HttpResponse;
 import com.thirtydegreesray.openhub.mvp.contract.IReleasesContract;
 import com.thirtydegreesray.openhub.mvp.model.Release;
-import com.thirtydegreesray.openhub.mvp.presenter.base.BasePresenter;
+import com.thirtydegreesray.openhub.mvp.presenter.base.BasePagerPresenter;
 
 import java.util.ArrayList;
 
@@ -19,7 +19,7 @@ import rx.Observable;
  * Created by ThirtyDegreesRay on 2017/9/16 11:31:07
  */
 
-public class ReleasesPresenter extends BasePresenter<IReleasesContract.View>
+public class ReleasesPresenter extends BasePagerPresenter<IReleasesContract.View>
         implements IReleasesContract.Presenter{
 
     @AutoAccess String owner;
@@ -32,8 +32,7 @@ public class ReleasesPresenter extends BasePresenter<IReleasesContract.View>
     }
 
     @Override
-    public void onViewInitialized() {
-        super.onViewInitialized();
+    protected void loadData() {
         if(releases == null){
             loadReleases(1, false);
         } else {

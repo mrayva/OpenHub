@@ -13,11 +13,6 @@
         android:icon="@drawable/ic_branch_title"
         app:showAsAction="ifRoom"/>
     <item
-        android:id="@+id/action_releases"
-        android:title="@string/releases"
-        android:icon="@drawable/ic_download_title"
-        app:showAsAction="always"/>
-    <item
         android:id="@+id/action_share"
         android:title="@string/share"
         app:showAsAction="never"/>
