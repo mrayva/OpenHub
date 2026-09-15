@@ -15,6 +15,7 @@ import com.thirtydegreesray.openhub.mvp.contract.base.IBaseContract;
 import com.thirtydegreesray.openhub.ui.activity.base.SingleFragmentActivity;
 import com.thirtydegreesray.openhub.ui.fragment.TopicsEditorFragment;
 import com.thirtydegreesray.openhub.ui.widget.ZoomAbleFloatingActionButton;
+import com.thirtydegreesray.openhub.util.ViewUtils;
 
 import butterknife.BindView;
 import butterknife.OnClick;
@@ -58,6 +59,8 @@ public class TopicsEditorActivity extends
         final EditText editText = new EditText(this);
         editText.setInputType(InputType.TYPE_CLASS_TEXT);
         editText.setHint(getString(R.string.add_topic_hint));
+        editText.setTextColor(ViewUtils.getTitleColor(this));
+        editText.setHintTextColor(ViewUtils.getSubTitleColor(this));
         new AlertDialog.Builder(this)
                 .setTitle(R.string.add_topic)
                 .setView(editText)
