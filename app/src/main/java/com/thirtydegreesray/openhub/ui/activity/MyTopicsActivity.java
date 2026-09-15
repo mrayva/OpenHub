@@ -119,6 +119,12 @@ public class MyTopicsActivity extends PagerActivity<MyTopicsPresenter>
     }
 
     @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        menu.findItem(R.id.action_apply_ignore_list).setChecked(PrefUtils.isIgnoreListApplied());
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
         if (id == R.id.action_manage_topics) {
@@ -137,8 +143,26 @@ public class MyTopicsActivity extends PagerActivity<MyTopicsPresenter>
             PrefUtils.setTopicsSearchSort(sort);
             reloadTopicsSearch();
             return true;
+        } else if (id == R.id.action_apply_ignore_list) {
+            boolean applied = !item.isChecked();
+            item.setChecked(applied);
+            PrefUtils.set(PrefUtils.IGNORE_LIST_APPLIED, applied);
+            notifyIgnoreListToggle();
+            return true;
+        } else if (id == R.id.action_manage_ignore_list) {
+            IgnoredReposActivity.show(getActivity());
+            return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    private void notifyIgnoreListToggle() {
+        for (FragmentPagerModel fragmentPagerModel : pagerAdapter.getPagerList()) {
+            Fragment fragment = fragmentPagerModel.getFragment();
+            if (fragment instanceof RepositoriesFragment) {
+                ((RepositoriesFragment) fragment).onIgnoreListToggle();
+            }
+        }
     }
 
     @Override

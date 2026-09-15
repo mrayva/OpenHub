@@ -153,6 +153,7 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
                         .put("type", RepositoriesType.TOPICS_SEARCH)
                         .putStringList("topicSlugs", topicSlugs)
                         .put("sort", sort)
+                        .put("ignoreListEligible", true)
                         .build()
         );
         return fragment;

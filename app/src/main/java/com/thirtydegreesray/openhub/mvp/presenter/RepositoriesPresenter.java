@@ -694,10 +694,17 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             if (mView == null) return;
             for (TopicPage page : pages) {
                 multiTopicNextPage.put(page.topicSlug, multiTopicNextPage.get(page.topicSlug) + 1);
+                // Exhaustion is decided from the raw (pre-filter) page size,
+                // same reasoning as searchRepos() - filtering out ignored
+                // repos can shrink a full page down to fewer displayed items.
                 if (page.items.size() < SEARCH_PAGE_SIZE) {
                     multiTopicExhausted.add(page.topicSlug);
                 }
-                for (Repository repository : page.items) {
+                ArrayList<Repository> items = page.items;
+                if (ignoreListEligible && PrefUtils.isIgnoreListApplied()) {
+                    items = filterIgnored(items);
+                }
+                for (Repository repository : items) {
                     if (multiTopicSeenIds.add(repository.getId())) {
                         repos.add(repository);
                     }

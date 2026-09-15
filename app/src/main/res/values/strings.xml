@@ -448,7 +448,7 @@
     <string name="no_bookmarks">No bookmarks</string>
     <string name="no_trace">No trace</string>
     <string name="trace_deleted">Trace deleted</string>
-    <string name="no_ignored_repos">No ignored repos yet. Swipe left on a repo in Trending or Created to add it here.</string>
+    <string name="no_ignored_repos">No ignored repos yet. Swipe left on a repo in Trending, Created or My Topics to add it here.</string>
     <string name="repo_ignored">%s ignored</string>
     <string name="repo_unignored">%s removed from ignore list</string>
     <string name="apply_ignore_list">Apply ignore list</string>
