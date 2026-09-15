@@ -38,14 +38,6 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
     private ArrayList<Notification> notifications;
     private ArrayList<DoubleTypesModel<Repository, Notification>> sortedNotifications;
 
-    // GitHub's default/max per_page for /notifications. The displayed list
-    // is grouped by repo (sortNotifications() injects one extra header row
-    // per distinct repo), so the raw per-page fetch size never lines up with
-    // ListFragment's generic itemCount-modulo auto-judge - canLoadMore is
-    // decided explicitly from this instead (see NotificationsFragment's
-    // setAutoJudgeCanLoadMoreEnable(false)).
-    private static final int NOTIFICATIONS_PAGE_SIZE = 50;
-
     @Inject
     public NotificationsPresenter(DaoSession daoSession) {
         super(daoSession);
@@ -81,13 +73,22 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
                 } else {
                     notifications.addAll(response.body());
                 }
-                // A raw fetch smaller than a full page means this was the
-                // last page - decided from the raw per-page count, not the
-                // displayed (repo-header-inflated) item count, which the
-                // generic auto-judge can't reason about for a grouped list.
-                mView.setCanLoadMore(rawCount == NOTIFICATIONS_PAGE_SIZE);
-                sortedNotifications = sortNotifications(notifications);
-                mView.showNotifications(sortedNotifications);
+                // Stop only when a page comes back genuinely empty - same
+                // "empty page means done" rule every other paginated
+                // presenter in this app uses (RepositoriesPresenter etc.).
+                // GitHub's notifications per_page isn't a documented fixed
+                // constant we can safely assume here (unlike this app's own
+                // REST endpoints), so comparing the raw count against a
+                // guessed page size - the previous approach - could cut
+                // pagination off after page 1 whenever the real page size
+                // differed from the guess, which is exactly what happened.
+                if (rawCount == 0 && notifications.size() != 0) {
+                    mView.setCanLoadMore(false);
+                } else {
+                    mView.setCanLoadMore(true);
+                    sortedNotifications = sortNotifications(notifications);
+                    mView.showNotifications(sortedNotifications);
+                }
             }
         };
 
