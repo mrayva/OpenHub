@@ -62,7 +62,17 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
     @Override
     public void loadNotifications(final int page, boolean isReload) {
         mView.showLoading();
-        final boolean readCacheFirst = page == 1 && !isReload;
+        // Deliberately never cache-first here, unlike every other page==1
+        // load in this app: cacheFirstEnable defaults on with a 4-week
+        // Cache-Control max-age (AppConfig.CACHE_MAX_AGE), and the
+        // cache-then-network path in generalRxHttpExecute() paints that
+        // stale cached response immediately before quietly replacing it with
+        // the real one - fine for largely-static data (a repo's info, a
+        // profile), but for a live, per-account feed like this it reads as
+        // "didn't load everything" followed by items mysteriously appearing
+        // a moment later. Notifications must always reflect what the server
+        // has right now.
+        final boolean readCacheFirst = false;
 
         HttpObserver<ArrayList<Notification>> httpObserver = new HttpObserver<ArrayList<Notification>>() {
             @Override
