@@ -74,6 +74,19 @@ public class MyTopicsActivity extends PagerActivity<MyTopicsPresenter>
     @Override
     protected void initView(Bundle savedInstanceState) {
         super.initView(savedInstanceState);
+
+        // activity_view_pager_with_drawer.xml hardcodes a 200dp top margin on
+        // the included appbar (apparently baked in for some other screen
+        // that isn't this layout's only user) - Trending/Created, the other
+        // two screens reusing this same layout, zero it back out the same
+        // way; without this the toolbar renders 200dp down the screen with a
+        // large dead black gap above it.
+        com.google.android.material.appbar.AppBarLayout appBarLayout = findViewById(R.id.app_bar);
+        androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams params =
+                (androidx.coordinatorlayout.widget.CoordinatorLayout.LayoutParams) appBarLayout.getLayoutParams();
+        params.setMargins(params.leftMargin, 0, params.rightMargin, params.bottomMargin);
+        appBarLayout.setLayoutParams(params);
+
         setToolbarScrollAble(true);
         setToolbarBackEnable();
         topicSlugs = mPresenter.getSelectedTopicSlugs();
