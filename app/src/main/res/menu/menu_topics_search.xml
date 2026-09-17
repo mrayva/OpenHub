@@ -4,6 +4,12 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
     <item
+        android:id="@+id/nav_languages"
+        android:title="@string/my_languages"
+        app:showAsAction="ifRoom"
+        android:icon="@drawable/ic_language_title"/>
+
+    <item
         android:id="@+id/action_manage_topics"
         android:title="@string/manage_topics"
         app:showAsAction="ifRoom"/>

@@ -4,7 +4,9 @@ import com.thirtydegreesray.openhub.dao.DaoSession;
 import com.thirtydegreesray.openhub.dao.MyTopic;
 import com.thirtydegreesray.openhub.dao.MyTopicDao;
 import com.thirtydegreesray.openhub.mvp.contract.IMyTopicsContract;
+import com.thirtydegreesray.openhub.mvp.model.TrendingLanguage;
 import com.thirtydegreesray.openhub.mvp.presenter.base.BasePresenter;
+import com.thirtydegreesray.openhub.util.TrendingLanguageHelper;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,9 +21,21 @@ public class MyTopicsPresenter extends BasePresenter<IMyTopicsContract.View>
             "react", "docker", "kubernetes", "api", "cli", "game"
     };
 
+    private ArrayList<TrendingLanguage> languages;
+
     @Inject
     public MyTopicsPresenter(DaoSession daoSession) {
         super(daoSession);
+    }
+
+    @Override
+    public ArrayList<TrendingLanguage> getLanguagesFromLocal() {
+        languages = TrendingLanguageHelper.getLanguagesFromLocal(daoSession, getContext());
+        return languages;
+    }
+
+    public ArrayList<TrendingLanguage> getLanguages() {
+        return languages;
     }
 
     /**

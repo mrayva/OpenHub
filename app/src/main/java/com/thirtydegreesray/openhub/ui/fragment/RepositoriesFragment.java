@@ -363,11 +363,14 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
 
     /**
      * For the TOPICS_SEARCH type (MyTopicsActivity), pushed when the user's
-     * selected topics or sort field change - mirrors onSearchModelUpdate.
+     * selected topics, sort field, or language filter change - mirrors
+     * onSearchModelUpdate. language may be null (no filter applied).
      */
-    public void onTopicsSearchUpdate(ArrayList<String> topicSlugs, String sort) {
+    public void onTopicsSearchUpdate(ArrayList<String> topicSlugs, String sort,
+                                      @Nullable TrendingLanguage language) {
         if(mPresenter != null){
             mPresenter.setTopicsSearchParams(topicSlugs, sort);
+            mPresenter.setLanguage(language);
             mPresenter.setLoaded(false);
             // Use onRefresh() rather than prepareLoadData() directly so the
             // fragment's own page counter resets to 1 too - otherwise a user
@@ -380,6 +383,7 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
         } else {
             getArguments().putStringArrayList("topicSlugs", topicSlugs);
             getArguments().putString("sort", sort);
+            getArguments().putParcelable("language", language);
         }
     }
 

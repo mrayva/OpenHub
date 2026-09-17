@@ -15,6 +15,7 @@ import com.thirtydegreesray.openhub.inject.component.AppComponent;
 import com.thirtydegreesray.openhub.inject.component.DaggerActivityComponent;
 import com.thirtydegreesray.openhub.inject.module.ActivityModule;
 import com.thirtydegreesray.openhub.mvp.contract.IMyTopicsContract;
+import com.thirtydegreesray.openhub.mvp.model.TrendingLanguage;
 import com.thirtydegreesray.openhub.mvp.presenter.MyTopicsPresenter;
 import com.thirtydegreesray.openhub.ui.activity.base.PagerActivity;
 import com.thirtydegreesray.openhub.ui.adapter.base.FragmentPagerModel;
@@ -41,13 +42,16 @@ public class MyTopicsActivity extends PagerActivity<MyTopicsPresenter>
     }
 
     private static final int MANAGE_TOPICS_REQUEST_CODE = 100;
+    private static final int SORT_LANGUAGE_REQUEST_CODE = 101;
 
     private ArrayList<String> topicSlugs;
     private String sort;
+    private TrendingLanguage selectedLanguage;
 
     @Override
     protected void initActivity() {
         super.initActivity();
+        setEndDrawerEnable(true);
         sort = PrefUtils.getTopicsSearchSort();
         mPresenter.seedDefaultTopicsIfEmpty();
     }
@@ -64,7 +68,7 @@ public class MyTopicsActivity extends PagerActivity<MyTopicsPresenter>
     @Nullable
     @Override
     protected int getContentView() {
-        return R.layout.activity_view_pager;
+        return R.layout.activity_view_pager_with_drawer;
     }
 
     @Override
@@ -78,6 +82,7 @@ public class MyTopicsActivity extends PagerActivity<MyTopicsPresenter>
         tabLayout.setVisibility(View.GONE);
         viewPager.setAdapter(pagerAdapter);
         showFirstPager();
+        initLanguagesDrawer();
         updateTitle();
     }
 
@@ -101,6 +106,59 @@ public class MyTopicsActivity extends PagerActivity<MyTopicsPresenter>
     @Override
     protected int getFragmentPosition(Fragment fragment) {
         return fragment instanceof RepositoriesFragment ? 0 : -1;
+    }
+
+    @Override
+    protected void onNavItemSelected(@NonNull MenuItem item, boolean isStartDrawer) {
+        super.onNavItemSelected(item, isStartDrawer);
+        TrendingLanguage curSelectedLanguage = mPresenter.getLanguages().get(item.getOrder() - 1);
+        if (!curSelectedLanguage.equals(selectedLanguage)) {
+            selectedLanguage = curSelectedLanguage;
+            notifyLanguageUpdate();
+        }
+    }
+
+    @Override
+    protected int getEndDrawerToggleMenuItemId() {
+        return R.id.nav_languages;
+    }
+
+    private void initLanguagesDrawer() {
+        if (navViewEnd == null) return;
+        updateLanguagesDrawer();
+        View view = getLayoutInflater().inflate(R.layout.layout_trending_drawer_bottom, null);
+        navViewEnd.addHeaderView(view);
+        View editView = view.findViewById(R.id.language_edit_bn);
+        editView.setOnClickListener(v -> LanguagesEditorActivity.show(getActivity(),
+                LanguagesEditorActivity.LanguageEditorMode.Sort, SORT_LANGUAGE_REQUEST_CODE));
+    }
+
+    private void updateLanguagesDrawer() {
+        if (navViewEnd == null) return;
+        updateEndDrawerContent(R.menu.drawer_menu_trending);
+        ArrayList<TrendingLanguage> languages = mPresenter.getLanguagesFromLocal();
+        Menu menu = navViewEnd.getMenu();
+        for (TrendingLanguage language : languages) {
+            menu.add(R.id.group_languages, language.getOrder(), language.getOrder(), language.getName());
+        }
+        menu.setGroupCheckable(R.id.group_languages, true, true);
+        if (languages.contains(selectedLanguage)) {
+            //maybe list size changed, and order changed too
+            selectedLanguage = languages.get(languages.indexOf(selectedLanguage));
+        } else {
+            selectedLanguage = languages.get(0);
+            notifyLanguageUpdate();
+        }
+        menu.findItem(selectedLanguage.getOrder()).setChecked(true);
+    }
+
+    private void notifyLanguageUpdate() {
+        for (FragmentPagerModel fragmentPagerModel : pagerAdapter.getPagerList()) {
+            Fragment fragment = fragmentPagerModel.getFragment();
+            if (fragment instanceof RepositoriesFragment) {
+                ((RepositoriesFragment) fragment).onTopicsSearchUpdate(topicSlugs, sort, selectedLanguage);
+            }
+        }
     }
 
     @Override
@@ -170,17 +228,18 @@ public class MyTopicsActivity extends PagerActivity<MyTopicsPresenter>
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == MANAGE_TOPICS_REQUEST_CODE && resultCode == RESULT_OK) {
             reloadTopicsSearch();
+        } else if (requestCode == SORT_LANGUAGE_REQUEST_CODE && resultCode == RESULT_OK) {
+            updateLanguagesDrawer();
         }
     }
 
     private void reloadTopicsSearch() {
         topicSlugs = mPresenter.getSelectedTopicSlugs();
         updateTitle();
-        for (com.thirtydegreesray.openhub.ui.adapter.base.FragmentPagerModel fragmentPagerModel
-                : pagerAdapter.getPagerList()) {
+        for (FragmentPagerModel fragmentPagerModel : pagerAdapter.getPagerList()) {
             Fragment fragment = fragmentPagerModel.getFragment();
             if (fragment instanceof RepositoriesFragment) {
-                ((RepositoriesFragment) fragment).onTopicsSearchUpdate(topicSlugs, sort);
+                ((RepositoriesFragment) fragment).onTopicsSearchUpdate(topicSlugs, sort, selectedLanguage);
             }
         }
     }

@@ -670,7 +670,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         List<Observable<TopicPage>> sources = new ArrayList<>();
         for (final String slug : activeTopics) {
             final int page = multiTopicNextPage.get(slug);
-            sources.add(getSearchService().searchRepos("topic:" + slug, sortField, "desc", page)
+            sources.add(getSearchService().searchRepos(buildTopicQuery(slug), sortField, "desc", page)
                     .map(response -> {
                         ArrayList<Repository> list = new ArrayList<>();
                         if (response.isSuccessful() && response.body() != null) {
@@ -847,9 +847,25 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
 
     private void initSearchModelForTopicsSearch(){
         String sortField = StringUtils.isBlank(sort) ? "stars" : sort;
-        searchModel = new SearchModel(SearchModel.SearchType.Repository, "topic:" + topicSlugs.get(0))
+        searchModel = new SearchModel(SearchModel.SearchType.Repository, buildTopicQuery(topicSlugs.get(0)))
                 .setSort(sortField)
                 .setDesc(true);
+    }
+
+    /**
+     * "topic:{slug}", optionally ANDed with "language:{slug}" - shared by
+     * both TOPICS_SEARCH paths (single-topic via initSearchModelForTopicsSearch()
+     * and multi-topic via searchMultiTopics()) so the same language filter
+     * (set via setLanguage(), same field/mechanism TRENDING already uses)
+     * applies consistently regardless of how many topics are selected.
+     */
+    private String buildTopicQuery(String topicSlug) {
+        String query = "topic:" + topicSlug;
+        String langSlug = language == null ? null : language.getSlug();
+        if (langSlug != null && !langSlug.isEmpty() && !"unknown".equals(langSlug) && !"all".equals(langSlug)) {
+            query += " language:" + encodeLanguageSlug(langSlug);
+        }
+        return query;
     }
 
     /**
