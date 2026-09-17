@@ -18,9 +18,11 @@ import com.thirtydegreesray.openhub.ui.fragment.NotificationsFragment;
 import com.thirtydegreesray.openhub.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -37,6 +39,15 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
     @AutoAccess NotificationsFragment.NotificationsType type;
     private ArrayList<Notification> notifications;
     private ArrayList<DoubleTypesModel<Repository, Notification>> sortedNotifications;
+    // Marking read is a fire-and-forget PATCH (generalRxHttpExecute(..., null)
+    // below - no completion callback), and readCacheFirst's cache-then-network
+    // double fetch on the very first load can deliver a second, fresher
+    // onSuccess() for the same page after the user has already acted on the
+    // cached one. Without this, that second response's full list replace
+    // (page == 1 branch below) silently reverted every mark-as-read made in
+    // between back to unread - remembering the ids here and reapplying them
+    // onto any freshly fetched batch closes that window.
+    private final Set<String> locallyReadIds = new HashSet<>();
 
     @Inject
     public NotificationsPresenter(DaoSession daoSession) {
@@ -68,6 +79,11 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
             public void onSuccess(HttpResponse<ArrayList<Notification>> response) {
                 mView.hideLoading();
                 int rawCount = response.body().size();
+                for (Notification notification : response.body()) {
+                    if (locallyReadIds.contains(notification.getId())) {
+                        notification.setUnread(false);
+                    }
+                }
                 if (notifications == null || page == 1) {
                     notifications = response.body();
                 } else {
@@ -112,6 +128,7 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
     @Override
     public void markNotificationAsRead(String threadId) {
         generalRxHttpExecute(getNotificationsService().markNotificationAsRead(threadId), null);
+        locallyReadIds.add(threadId);
     }
 
     @Override
@@ -122,6 +139,7 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
         for(DoubleTypesModel<Repository, Notification> model : sortedNotifications){
             if(model.getM2() != null){
                 model.getM2().setUnread(false);
+                locallyReadIds.add(model.getM2().getId());
             }
         }
         mView.showNotifications(sortedNotifications);
@@ -151,6 +169,7 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
                 model.setAllRead(true);
             } else if(model.getM2() != null && model.getM2().getRepository().getId() == repository.getId()){
                 model.getM2().setUnread(false);
+                locallyReadIds.add(model.getM2().getId());
             }
         }
         mView.showNotifications(sortedNotifications);
@@ -188,7 +207,25 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
         while (iterator.hasNext()) {
             String key = iterator.next();
             ArrayList<Notification> list = sortedMap.get(key);
-            sortedList.add(new DoubleTypesModel<Repository, Notification>(list.get(0).getRepository(), null));
+            DoubleTypesModel<Repository, Notification> header =
+                    new DoubleTypesModel<Repository, Notification>(list.get(0).getRepository(), null);
+            // Derive from the actual per-notification read state every time,
+            // rather than defaulting to false - this list gets rebuilt from
+            // scratch on every load-more/reload (fresh DoubleTypesModel
+            // instances), which was silently discarding markRepoNotificationsAsRead()'s
+            // one-off mutation of the old header instance and made every
+            // repo checkmark revert to "unread" as soon as the next page
+            // loaded, even though the notifications themselves were still
+            // correctly marked read.
+            boolean allRead = true;
+            for (Notification notification : list) {
+                if (notification.isUnread()) {
+                    allRead = false;
+                    break;
+                }
+            }
+            header.setAllRead(allRead);
+            sortedList.add(header);
             for(Notification notification : list){
                 sortedList.add(new DoubleTypesModel<Repository, Notification>(null, notification));
             }
