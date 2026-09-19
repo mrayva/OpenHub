@@ -341,7 +341,21 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         }
     }
 
+    // Caps the auto-continue chain in searchRepos() below at 15 extra pages
+    // (~450 raw repos beyond the first page) per reload/load-more call, so a
+    // pathologically large personal ignore list can't make a single reload
+    // fire dozens of rapid-fire GitHub search requests back to back and risk
+    // the search API's rate limit (10/min unauthenticated, 30/min
+    // authenticated). If the cap is hit, whatever was found gets shown as-is
+    // with canLoadMore left true, so a later manual scroll/pull picks up
+    // the chain again one page at a time, same as any other load-more.
+    private static final int MAX_AUTO_CONTINUE_PAGES = 15;
+
     private void searchRepos(final int page) {
+        searchRepos(page, 0);
+    }
+
+    private void searchRepos(final int page, final int autoContinueDepth) {
         mView.showLoading();
 
         HttpObserver<SearchResult<Repository>> httpObserver =
@@ -403,25 +417,25 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                             // the only source of truth.
                             boolean morePagesAvailable = rawCount == SEARCH_PAGE_SIZE;
                             mView.setCanLoadMore(morePagesAvailable);
-                            if (repos.isEmpty() && morePagesAvailable) {
-                                // Every repo on this page (and page == 1 on a
-                                // reload means possibly several prior pages
-                                // too, since repos is reset to items above)
-                                // is on the ignore list. ListFragment hides
-                                // its pull-to-refresh entirely once the item
-                                // count hits 0 (onListDataUpdated()), and
-                                // load-more only fires from a scroll gesture
-                                // on the RecyclerView - which has nothing to
-                                // scroll when it's empty. Without this, the
-                                // user is stuck on a dead "No repositories"
-                                // screen with no way to reach the further
-                                // pages that do have non-ignored matches -
-                                // keep fetching automatically instead of
-                                // handing control back with nothing to show.
+                            if (repos.size() < SEARCH_PAGE_SIZE && morePagesAvailable
+                                    && autoContinueDepth < MAX_AUTO_CONTINUE_PAGES) {
+                                // Not just the empty case (every repo on this
+                                // page on the ignore list) - a heavily-ignored
+                                // list can also leave a SMALL but nonzero
+                                // count (1, 2, a handful) that still isn't
+                                // enough content to fill the screen. Since
+                                // ListFragment's load-more only fires from an
+                                // actual scroll gesture on the RecyclerView,
+                                // a handful of rows with nothing below the
+                                // fold to scroll to is the exact same dead
+                                // end as zero rows - just one notch less
+                                // obviously broken. Keep fetching until
+                                // there's at least a full page's worth of
+                                // genuinely displayed content (matching what
+                                // an unfiltered load would normally show) or
                                 // GitHub's own pagination (a short/empty raw
-                                // page) is what eventually ends this, same
-                                // as any other load-more.
-                                searchRepos(page + 1);
+                                // page) says there's truly nothing left.
+                                searchRepos(page + 1, autoContinueDepth + 1);
                                 return;
                             }
                             mView.hideLoading();
