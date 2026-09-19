@@ -352,22 +352,83 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
     private static final int MAX_AUTO_CONTINUE_PAGES = 15;
 
     private void searchRepos(final int page) {
-        searchRepos(page, 0);
+        // The only caller that ever passes page==1 is a fresh reload
+        // (loadData()); load-more (loadRepositories()) always passes the
+        // fragment's own current page number, never 1 again once scrolled
+        // past the first page. isFreshReload threads that fact through the
+        // whole auto-continue chain below - see its use there for why page
+        // itself isn't enough once the chain runs past page 1.
+        searchRepos(page, 0, page == 1, searchModel.getQuery(), searchModel.getSort(), searchModel.getOrder());
     }
 
-    private void searchRepos(final int page, final int autoContinueDepth) {
+    /**
+     * requestQuery/Sort/Order are the searchModel field VALUES this specific
+     * call (and its whole auto-continue chain) was started for, frozen at
+     * the top of the chain - never re-read from the live searchModel once
+     * fetching begins. Needed because nothing in this codebase cancels an
+     * in-flight request when a new reload starts (BasePresenter only
+     * unsubscribes everything on detachView()); switching the language
+     * filter (or any other reload) while an auto-continue chain from the
+     * PREVIOUS query is still mid-flight used to let that stale chain's
+     * later pages land after the new one had already reset repos/
+     * searchReposSeenIds for the new query, silently merging results from
+     * the wrong filter into what's displayed - confirmed live: results not
+     * matching the selected language appeared after switching filters while
+     * a heavily-ignored reload was still paging through auto-continue.
+     *
+     * This compares field VALUES, not object identity (searchModel !=
+     * someCapturedReference): CreatedActivity.notifyLanguageUpdate()
+     * mutates the SAME SearchModel instance in place via setQuery() rather
+     * than assigning a new one (only onSearchEvent() does that), so a
+     * reference check never detects that call as a supersession - confirmed
+     * live, the contamination reproduced identically with a reference-based
+     * check in place. Checking the live searchModel's actual query/sort/
+     * order against what was frozen at request time catches both cases.
+     * Discards anything from a superseded chain instead of merging it in,
+     * and stops that chain from scheduling further auto-continue pages at
+     * all - it can't cancel the one request already in flight, but it stops
+     * adding more on top of it.
+     *
+     * isFreshReload is true for every hop of a chain that STARTED at page 1
+     * (a reload), even once auto-continue has carried it past page 1 - as
+     * opposed to page == 1 alone, which is only true for that first hop.
+     * Needed because the chain can settle (call showRepositories()) on
+     * whichever page finally has enough content, not necessarily page 1:
+     * using page == 1 to decide appendedCount below used to zero it only
+     * when the chain happened to settle immediately, and otherwise pass the
+     * settling page's own per-page new-item count as if it were a load-more
+     * append onto EXISTING on-screen content - RepositoriesFragment then
+     * called notifyItemRangeInserted() instead of notifyDataSetChanged(),
+     * which tells RecyclerView "everything outside this range is unchanged"
+     * even though repos had just been rebuilt from scratch for a different
+     * query entirely. Confirmed live: switching the language filter mid-
+     * chain left the first few rows showing the previous (wrong-language)
+     * results indefinitely, never rebound, while later rows correctly
+     * showed the new query's results.
+     */
+    private void searchRepos(final int page, final int autoContinueDepth, final boolean isFreshReload,
+                              final String requestQuery, final String requestSort, final String requestOrder) {
         mView.showLoading();
 
         HttpObserver<SearchResult<Repository>> httpObserver =
                 new HttpObserver<SearchResult<Repository>>() {
+                    private boolean isStale() {
+                        return searchModel == null
+                                || !java.util.Objects.equals(searchModel.getQuery(), requestQuery)
+                                || !java.util.Objects.equals(searchModel.getSort(), requestSort)
+                                || !java.util.Objects.equals(searchModel.getOrder(), requestOrder);
+                    }
+
                     @Override
                     public void onError(@NonNull Throwable error) {
+                        if (isStale()) return;
                         mView.hideLoading();
                         handleError(error);
                     }
 
                     @Override
                     public void onSuccess(@NonNull HttpResponse<SearchResult<Repository>> response) {
+                        if (isStale()) return;
                         ArrayList<Repository> items = response.body().getItems();
                         int rawCount = items.size();
                         if (ignoreListEligible && PrefUtils.isIgnoreListApplied()) {
@@ -384,7 +445,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                                 appendedCount++;
                             }
                         }
-                        if (page == 1) appendedCount = 0;
+                        if (isFreshReload) appendedCount = 0;
                         // GitHub's search API has no "created" sort value (it's
                         // silently ignored - confirmed against the live API,
                         // both asc/desc order came back identical). "updated"
@@ -392,14 +453,14 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                         // (updated_at) than the one displayed on each row
                         // (pushedAt) - see sortRepos()'s comment. Both need a
                         // client-side re-sort of what's been fetched so far;
-                        // reading sort/desc from searchModel (not the "sort"
-                        // field, which only TOPICS_SEARCH populates) covers
-                        // both TOPICS_SEARCH and SEARCH, the two types that
-                        // reach this path with a real sort selection - TOPIC
-                        // never sets a sort on its query at all.
-                        String searchSort = searchModel == null ? null : searchModel.getSort();
-                        if ("created".equals(searchSort) || "updated".equals(searchSort)) {
-                            sortRepos(repos, searchSort, searchModel.isDesc());
+                        // reading sort/desc from the frozen request values
+                        // (not the "sort" field, which only TOPICS_SEARCH
+                        // populates) covers both TOPICS_SEARCH and SEARCH,
+                        // the two types that reach this path with a real
+                        // sort selection - TOPIC never sets a sort on its
+                        // query at all.
+                        if ("created".equals(requestSort) || "updated".equals(requestSort)) {
+                            sortRepos(repos, requestSort, "desc".equals(requestOrder));
                             // a full re-sort can move existing rows, not just
                             // add new ones at the end - not safe to treat as
                             // a pure append anymore.
@@ -435,7 +496,8 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                                 // an unfiltered load would normally show) or
                                 // GitHub's own pagination (a short/empty raw
                                 // page) says there's truly nothing left.
-                                searchRepos(page + 1, autoContinueDepth + 1);
+                                searchRepos(page + 1, autoContinueDepth + 1, isFreshReload,
+                                        requestQuery, requestSort, requestOrder);
                                 return;
                             }
                             mView.hideLoading();
@@ -453,8 +515,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             @Nullable
             @Override
             public Observable<Response<SearchResult<Repository>>> createObservable(boolean forceNetWork) {
-                return getSearchService().searchRepos(searchModel.getQuery(), searchModel.getSort(),
-                        searchModel.getOrder(), page);
+                return getSearchService().searchRepos(requestQuery, requestSort, requestOrder, page);
             }
         }, httpObserver);
     }
