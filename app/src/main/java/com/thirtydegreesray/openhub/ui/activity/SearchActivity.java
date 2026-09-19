@@ -18,6 +18,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.AutoCompleteTextView;
+import android.widget.ListView;
 import androidx.appcompat.app.AlertDialog;
 
 import com.thirtydegreesray.dataautoaccess.annotation.AutoAccess;
@@ -63,6 +64,9 @@ public class SearchActivity extends PagerActivity<SearchPresenter>
     @AutoAccess boolean isInputMode = true;
     @AutoAccess String[] sortInfos;
     private TrendingLanguage selectedLanguage;
+    private ListView searchRecordsListView;
+    private ArrayAdapter<String> searchRecordAdapter;
+    private View appBarLayoutView;
 
     @Override
     protected void initActivity() {
@@ -106,11 +110,117 @@ public class SearchActivity extends PagerActivity<SearchPresenter>
         setToolbarBackEnable();
         setToolbarTitle(getString(R.string.search));
         initLanguagesDrawer();
+        initSearchRecordsListView();
         if(sortInfos == null) {
             sortInfos = new String[]{
                     getString(R.string.best_match), getString(R.string.best_match)
             };
         }
+    }
+
+    /**
+     * Search history used to be shown via the SearchView's internal
+     * AutoCompleteTextView's own floating dropdown (a separate PopupWindow) -
+     * replaced because taps on it never registered (see
+     * setOnItemLongClickListener() below for the actual root cause). Anchored
+     * to the activity's plain android.R.id.content root - a sibling of the
+     * whole DrawerLayout, not a child of the CoordinatorLayout - rather than
+     * inside the CoordinatorLayout alongside the ViewPager, since
+     * CoordinatorLayout's touch dispatch order isn't a plain last-added-on-top
+     * ViewGroup's (it's a Behavior/anchor dependency sort); a plain
+     * FrameLayout keeps hit-testing simple and predictable.
+     */
+    private void initSearchRecordsListView() {
+        appBarLayoutView = findViewById(R.id.app_bar);
+        ViewGroup contentRoot = findViewById(android.R.id.content);
+
+        searchRecordAdapter = new ArrayAdapter<>(this,
+                R.layout.layout_item_simple_list, mPresenter.getSearchRecordList());
+        searchRecordsListView = new ListView(this);
+        searchRecordsListView.setAdapter(searchRecordAdapter);
+        searchRecordsListView.setBackground(new ColorDrawable(ViewUtils.getWindowBackground(getActivity())));
+        searchRecordsListView.setVisibility(View.GONE);
+        // Never take focus from the SearchView's EditText via touch - if the
+        // list itself grabbed focus on tap-down, the EditText's focus-change
+        // listener would hide this list before onItemClick had a chance to
+        // fire.
+        searchRecordsListView.setFocusable(false);
+        searchRecordsListView.setFocusableInTouchMode(false);
+        searchRecordsListView.setOnItemClickListener((parent, view, position, id) -> {
+            String record = searchRecordAdapter.getItem(position);
+            hideSearchRecords();
+            if (record != null) onQueryTextSubmit(record);
+        });
+        // Long-press-to-delete is wired on the ListView itself (not via
+        // View.setOnLongClickListener() on each row - see SearchRecordAdapter,
+        // which deliberately does NOT do that): a row that is individually
+        // long-clickable consumes its entire touch gesture for itself
+        // (View.onTouchEvent() treats "clickable" as true whenever
+        // LONG_CLICKABLE is set, regardless of CLICKABLE), which silently
+        // prevents the tap from ever reaching AbsListView's own item-click
+        // tracking. That was the actual, original cause of search-history
+        // taps never registering, predating every other change this session.
+        searchRecordsListView.setOnItemLongClickListener((parent, view, position, id) -> {
+            String record = searchRecordAdapter.getItem(position);
+            if (record == null) return true;
+            new AlertDialog.Builder(this)
+                    .setTitle(R.string.warning_dialog_tile)
+                    .setMessage(R.string.delete_search_record_confirm)
+                    .setPositiveButton(R.string.ok, (dialog, which) -> {
+                        mPresenter.removeSearchRecord(record);
+                        searchRecordAdapter.clear();
+                        searchRecordAdapter.addAll(mPresenter.getSearchRecordList());
+                        searchRecordAdapter.notifyDataSetChanged();
+                    })
+                    .setNegativeButton(R.string.cancel, null)
+                    .show();
+            return true;
+        });
+
+        ViewGroup.MarginLayoutParams params = new ViewGroup.MarginLayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+        contentRoot.addView(searchRecordsListView, params);
+    }
+
+    private void updateSearchRecordsFilter(String query) {
+        ArrayList<String> allRecords = mPresenter.getSearchRecordList();
+        ArrayList<String> filtered;
+        if (StringUtils.isBlank(query)) {
+            filtered = allRecords;
+        } else {
+            filtered = new ArrayList<>();
+            String lower = query.toLowerCase();
+            for (String record : allRecords) {
+                if (record.toLowerCase().contains(lower)) filtered.add(record);
+            }
+        }
+        searchRecordAdapter.clear();
+        searchRecordAdapter.addAll(filtered);
+        searchRecordAdapter.notifyDataSetChanged();
+        if (filtered.isEmpty()) {
+            searchRecordsListView.setVisibility(View.GONE);
+            return;
+        }
+        // This list lives directly under android.R.id.content (a sibling of
+        // the whole DrawerLayout, not a child of the CoordinatorLayout - see
+        // initSearchRecordsListView()), so its top margin has to be computed
+        // from absolute on-screen positions rather than a same-parent
+        // sibling height: the app bar is nested several layouts deep
+        // (DrawerLayout's own top offset, CoordinatorLayout, etc.), all of
+        // which a simple "app bar height" figure would miss.
+        int[] appBarLoc = new int[2];
+        appBarLayoutView.getLocationOnScreen(appBarLoc);
+        int[] contentLoc = new int[2];
+        ((View) searchRecordsListView.getParent()).getLocationOnScreen(contentLoc);
+        ViewGroup.MarginLayoutParams params =
+                (ViewGroup.MarginLayoutParams) searchRecordsListView.getLayoutParams();
+        params.topMargin = (appBarLoc[1] + appBarLayoutView.getHeight()) - contentLoc[1];
+        searchRecordsListView.setLayoutParams(params);
+        searchRecordsListView.setVisibility(View.VISIBLE);
+    }
+
+    private void hideSearchRecords() {
+        if (searchRecordsListView != null) searchRecordsListView.setVisibility(View.GONE);
     }
 
     @Override
@@ -131,12 +241,12 @@ public class SearchActivity extends PagerActivity<SearchPresenter>
 
         AutoCompleteTextView autoCompleteTextView = searchView
                 .findViewById(androidx.appcompat.R.id.search_src_text);
-        autoCompleteTextView.setThreshold(0);
-        autoCompleteTextView.setAdapter(new SearchRecordAdapter(this,
-                R.layout.layout_item_simple_list, mPresenter.getSearchRecordList()));
-        autoCompleteTextView.setDropDownBackgroundDrawable(new ColorDrawable(ViewUtils.getWindowBackground(getActivity())));
-        autoCompleteTextView.setOnItemClickListener((parent, view, position, id) -> {
-            onQueryTextSubmit(parent.getAdapter().getItem(position).toString());
+        autoCompleteTextView.setOnFocusChangeListener((v, hasFocus) -> {
+            if (hasFocus) {
+                updateSearchRecordsFilter(autoCompleteTextView.getText().toString());
+            } else {
+                hideSearchRecords();
+            }
         });
 
         return super.onCreateOptionsMenu(menu);
@@ -185,6 +295,7 @@ public class SearchActivity extends PagerActivity<SearchPresenter>
     @Override
     public boolean onMenuItemActionCollapse(MenuItem item) {
         isInputMode = false;
+        hideSearchRecords();
         invalidateOptionsMenu();
         return true;
     }
@@ -196,6 +307,7 @@ public class SearchActivity extends PagerActivity<SearchPresenter>
             return true;
         }
         isInputMode = false;
+        hideSearchRecords();
         invalidateOptionsMenu();
         search(query);
         setSubTitle(viewPager.getCurrentItem());
@@ -205,6 +317,7 @@ public class SearchActivity extends PagerActivity<SearchPresenter>
 
     @Override
     public boolean onQueryTextChange(String newText) {
+        if (isInputMode && searchRecordsListView != null) updateSearchRecordsFilter(newText);
         return false;
     }
 
@@ -380,37 +493,6 @@ public class SearchActivity extends PagerActivity<SearchPresenter>
         super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == SORT_LANGUAGE_REQUEST_CODE && resultCode == RESULT_OK) {
             updateLanguagesDrawer();
-        }
-    }
-
-    private class SearchRecordAdapter extends ArrayAdapter<String> {
-
-        public SearchRecordAdapter(@NonNull Context context, int resource, @NonNull List<String> objects) {
-            super(context, resource, objects);
-        }
-
-        @NonNull
-        @Override
-        public View getView(int position, @Nullable View convertView, @NonNull ViewGroup parent) {
-            View view = super.getView(position, convertView, parent);
-            view.setOnLongClickListener(v -> {
-                String record = getItem(position);
-                if (record != null) {
-                    new AlertDialog.Builder(getContext())
-                            .setTitle(R.string.warning_dialog_tile)
-                            .setMessage(R.string.delete_search_record_confirm)
-                            .setPositiveButton(R.string.ok, (dialog, which) -> {
-                                mPresenter.removeSearchRecord(record);
-                                clear();
-                                addAll(mPresenter.getSearchRecordList());
-                                notifyDataSetChanged();
-                            })
-                            .setNegativeButton(R.string.cancel, null)
-                            .show();
-                }
-                return true;
-            });
-            return view;
         }
     }
 
