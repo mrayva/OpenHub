@@ -76,6 +76,13 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         implements IRepositoriesContract.Presenter {
 
     private ArrayList<Repository> repos;
+    // searchRepos() accumulation dedup - GitHub's search API can return the
+    // same repo on more than one page for a query with a small/volatile
+    // result set (confirmed live: identical repo id came back on
+    // consecutive pages for a narrow language+date-range query), and
+    // repos.addAll() had no de-dup at all, unlike searchMultiTopics()'s own
+    // multiTopicSeenIds. Reset alongside repos on every fresh load (page 1).
+    private Set<Integer> searchReposSeenIds;
 
     @AutoAccess RepositoriesFragment.RepositoriesType type;
     @AutoAccess String user;
@@ -352,14 +359,18 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                         if (ignoreListEligible && PrefUtils.isIgnoreListApplied()) {
                             items = filterIgnored(items);
                         }
-                        int appendedCount;
                         if (repos == null || page == 1) {
-                            repos = items;
-                            appendedCount = 0;
-                        } else {
-                            appendedCount = items.size();
-                            repos.addAll(items);
+                            repos = new ArrayList<>();
+                            searchReposSeenIds = new HashSet<>();
                         }
+                        int appendedCount = 0;
+                        for (Repository repository : items) {
+                            if (searchReposSeenIds.add(repository.getId())) {
+                                repos.add(repository);
+                                appendedCount++;
+                            }
+                        }
+                        if (page == 1) appendedCount = 0;
                         // GitHub's search API has no "created" sort value (it's
                         // silently ignored - confirmed against the live API,
                         // both asc/desc order came back identical). "updated"
