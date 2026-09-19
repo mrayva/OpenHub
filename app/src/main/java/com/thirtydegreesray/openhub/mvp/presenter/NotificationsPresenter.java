@@ -8,6 +8,7 @@ import com.thirtydegreesray.dataautoaccess.annotation.AutoAccess;
 import com.thirtydegreesray.openhub.dao.DaoSession;
 import com.thirtydegreesray.openhub.http.core.HttpObserver;
 import com.thirtydegreesray.openhub.http.core.HttpResponse;
+import com.thirtydegreesray.openhub.http.core.HttpSubscriber;
 import com.thirtydegreesray.openhub.mvp.contract.INotificationsContract;
 import com.thirtydegreesray.openhub.mvp.model.Notification;
 import com.thirtydegreesray.openhub.mvp.model.Repository;
@@ -26,6 +27,7 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
+import okhttp3.ResponseBody;
 import retrofit2.Response;
 import rx.Observable;
 
@@ -143,16 +145,39 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
 
     @Override
     public void markAllNotificationsAsRead() {
-        generalRxHttpExecute(getNotificationsService().markAllNotificationsAsRead(
-                MarkNotificationReadRequestModel.newInstance()), null);
-
+        // Optimistic - flips every row before the network call even starts,
+        // so the UI feels instant - but reverted in onError() below rather
+        // than fire-and-forget, so a failed request (the previous
+        // MarkNotificationReadRequestModel bug, or a genuine network error)
+        // is visible immediately instead of silently un-doing itself the
+        // next time this screen is reloaded from a fresh Activity instance.
+        final ArrayList<Notification> markedByThisCall = new ArrayList<>();
         for(DoubleTypesModel<Repository, Notification> model : sortedNotifications){
-            if(model.getM2() != null){
+            if(model.getM2() != null && model.getM2().isUnread()){
                 model.getM2().setUnread(false);
                 locallyReadIds.add(model.getM2().getId());
+                markedByThisCall.add(model.getM2());
             }
         }
         mView.showNotifications(sortedNotifications);
+
+        generalRxHttpExecute(getNotificationsService().markAllNotificationsAsRead(
+                MarkNotificationReadRequestModel.newInstance()), new HttpSubscriber<>(
+                new HttpObserver<ResponseBody>() {
+                    @Override
+                    public void onError(Throwable error) {
+                        for (Notification notification : markedByThisCall) {
+                            notification.setUnread(true);
+                            locallyReadIds.remove(notification.getId());
+                        }
+                        mView.showErrorToast(getErrorTip(error));
+                        mView.showNotifications(sortedNotifications);
+                    }
+
+                    @Override
+                    public void onSuccess(HttpResponse<ResponseBody> response) {
+                    }
+                }));
     }
 
     @Override
@@ -170,19 +195,44 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
 
     @Override
     public void markRepoNotificationsAsRead(@NonNull Repository repository) {
-        generalRxHttpExecute(getNotificationsService().markRepoNotificationsAsRead(
-                MarkNotificationReadRequestModel.newInstance(),
-                repository.getOwner().getLogin(), repository.getName()), null);
-
+        // Same optimistic-then-revert-on-error shape as markAllNotificationsAsRead()
+        // above, for the same reason.
+        final ArrayList<Notification> markedByThisCall = new ArrayList<>();
         for(DoubleTypesModel<Repository, Notification> model : sortedNotifications){
             if(model.getM1() != null && model.getM1().getId() == repository.getId()){
                 model.setAllRead(true);
-            } else if(model.getM2() != null && model.getM2().getRepository().getId() == repository.getId()){
+            } else if(model.getM2() != null && model.getM2().getRepository().getId() == repository.getId()
+                    && model.getM2().isUnread()){
                 model.getM2().setUnread(false);
                 locallyReadIds.add(model.getM2().getId());
+                markedByThisCall.add(model.getM2());
             }
         }
         mView.showNotifications(sortedNotifications);
+
+        generalRxHttpExecute(getNotificationsService().markRepoNotificationsAsRead(
+                MarkNotificationReadRequestModel.newInstance(),
+                repository.getOwner().getLogin(), repository.getName()), new HttpSubscriber<>(
+                new HttpObserver<ResponseBody>() {
+                    @Override
+                    public void onError(Throwable error) {
+                        for (Notification notification : markedByThisCall) {
+                            notification.setUnread(true);
+                            locallyReadIds.remove(notification.getId());
+                        }
+                        for(DoubleTypesModel<Repository, Notification> model : sortedNotifications){
+                            if(model.getM1() != null && model.getM1().getId() == repository.getId()){
+                                model.setAllRead(false);
+                            }
+                        }
+                        mView.showErrorToast(getErrorTip(error));
+                        mView.showNotifications(sortedNotifications);
+                    }
+
+                    @Override
+                    public void onSuccess(HttpResponse<ResponseBody> response) {
+                    }
+                }));
     }
 
     @Override
