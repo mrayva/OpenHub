@@ -347,7 +347,6 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
 
                     @Override
                     public void onSuccess(@NonNull HttpResponse<SearchResult<Repository>> response) {
-                        mView.hideLoading();
                         ArrayList<Repository> items = response.body().getItems();
                         int rawCount = items.size();
                         if (ignoreListEligible && PrefUtils.isIgnoreListApplied()) {
@@ -391,11 +390,36 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                             // RepositoriesFragment disables the auto-judge
                             // for ignoreListEligible fragments to make this
                             // the only source of truth.
-                            mView.setCanLoadMore(rawCount == SEARCH_PAGE_SIZE);
+                            boolean morePagesAvailable = rawCount == SEARCH_PAGE_SIZE;
+                            mView.setCanLoadMore(morePagesAvailable);
+                            if (repos.isEmpty() && morePagesAvailable) {
+                                // Every repo on this page (and page == 1 on a
+                                // reload means possibly several prior pages
+                                // too, since repos is reset to items above)
+                                // is on the ignore list. ListFragment hides
+                                // its pull-to-refresh entirely once the item
+                                // count hits 0 (onListDataUpdated()), and
+                                // load-more only fires from a scroll gesture
+                                // on the RecyclerView - which has nothing to
+                                // scroll when it's empty. Without this, the
+                                // user is stuck on a dead "No repositories"
+                                // screen with no way to reach the further
+                                // pages that do have non-ignored matches -
+                                // keep fetching automatically instead of
+                                // handing control back with nothing to show.
+                                // GitHub's own pagination (a short/empty raw
+                                // page) is what eventually ends this, same
+                                // as any other load-more.
+                                searchRepos(page + 1);
+                                return;
+                            }
+                            mView.hideLoading();
                             mView.showRepositories(repos, appendedCount);
                         } else if (rawCount == 0 && repos.size() != 0) {
+                            mView.hideLoading();
                             mView.setCanLoadMore(false);
                         } else {
+                            mView.hideLoading();
                             mView.showRepositories(repos, appendedCount);
                         }
                     }
