@@ -385,6 +385,7 @@
     <string name="trace">Trace</string>
     <string name="my_repos">My repos</string>
     <string name="starred_repos">Starred repos</string>
+    <string name="watched_repos">Watched repos</string>
     <string name="trending_repos">Trending repos</string>
 
     <string name="bookmarks">Bookmarks</string>

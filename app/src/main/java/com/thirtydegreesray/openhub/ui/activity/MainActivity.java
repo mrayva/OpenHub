@@ -73,7 +73,7 @@ public class MainActivity extends BaseDrawerActivity<MainPresenter>
     private boolean isAccountsAdded = false;
 
     private final List<Integer> FRAGMENT_NAV_ID_LIST = Arrays.asList(
-            R.id.nav_news, R.id.nav_owned, R.id.nav_starred, R.id.nav_bookmarks,
+            R.id.nav_news, R.id.nav_owned, R.id.nav_starred, R.id.nav_watched, R.id.nav_bookmarks,
             R.id.nav_trace, R.id.nav_public_news, R.id.nav_collections, R.id.nav_topics
     );
 
@@ -81,6 +81,7 @@ public class MainActivity extends BaseDrawerActivity<MainPresenter>
             ActivityFragment.ActivityType.News.name(),
             RepositoriesFragment.RepositoriesType.OWNED.name(),
             RepositoriesFragment.RepositoriesType.STARRED.name(),
+            RepositoriesFragment.RepositoriesType.WATCHED.name(),
             BookmarksFragment.class.getSimpleName(),
             TraceFragment.class.getSimpleName(),
             ActivityFragment.ActivityType.PublicNews.name(),
@@ -89,7 +90,7 @@ public class MainActivity extends BaseDrawerActivity<MainPresenter>
     );
 
     private final List<Integer> FRAGMENT_TITLE_LIST = Arrays.asList(
-            R.string.news, R.string.my_repos, R.string.starred_repos, R.string.bookmarks,
+            R.string.news, R.string.my_repos, R.string.starred_repos, R.string.watched_repos, R.string.bookmarks,
             R.string.trace, R.string.public_news, R.string.repo_collections, R.string.topics
     );
 
@@ -354,6 +355,9 @@ public class MainActivity extends BaseDrawerActivity<MainPresenter>
                         AppData.INSTANCE.getLoggedUser().getLogin());
             case R.id.nav_starred:
                 return RepositoriesFragment.create(RepositoriesFragment.RepositoriesType.STARRED,
+                        AppData.INSTANCE.getLoggedUser().getLogin());
+            case R.id.nav_watched:
+                return RepositoriesFragment.create(RepositoriesFragment.RepositoriesType.WATCHED,
                         AppData.INSTANCE.getLoggedUser().getLogin());
             case R.id.nav_bookmarks:
                 return BookmarksFragment.create();

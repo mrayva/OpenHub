@@ -55,7 +55,7 @@ public class RepositoriesFragment extends ListFragment<RepositoriesPresenter, Re
         IgnoreSwipeCallback.Listener{
 
     public enum RepositoriesType{
-        OWNED, PUBLIC, STARRED, TRENDING, SEARCH, FORKS, TRACE, BOOKMARK, IGNORED, COLLECTION, TOPIC, TOPICS_SEARCH
+        OWNED, PUBLIC, STARRED, WATCHED, TRENDING, SEARCH, FORKS, TRACE, BOOKMARK, IGNORED, COLLECTION, TOPIC, TOPICS_SEARCH
     }
 
     public static RepositoriesFragment create(@NonNull RepositoriesType type,

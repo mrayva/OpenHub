@@ -56,6 +56,17 @@ public interface RepoService {
     );
 
     /**
+     * List repositories the authenticated user is watching - GitHub's docs
+     * for this endpoint only document page/per_page, no sort/direction
+     * (unlike starred/owned above).
+     */
+    @NonNull @GET("user/subscriptions")
+    Observable<Response<ArrayList<Repository>>> getWatchedRepos(
+            @Header("forceNetWork") boolean forceNetWork,
+            @Query("page") int page
+    );
+
+    /**
      * List user repositories
      */
     @NonNull @GET("users/{user}/repos")

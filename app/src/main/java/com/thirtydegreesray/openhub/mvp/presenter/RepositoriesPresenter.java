@@ -314,6 +314,8 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             case STARRED:
                 return getRepoService().getStarredRepos(forceNetWork, user, page,
                         filter.getSort(), filter.getSortDirection());
+            case WATCHED:
+                return getRepoService().getWatchedRepos(forceNetWork, page);
             case FORKS:
                 return getRepoService().getForks(forceNetWork, user, repo, page, forksSort);
             default:
