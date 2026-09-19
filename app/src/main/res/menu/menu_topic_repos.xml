@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<menu
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <item
+        android:id="@+id/nav_languages"
+        android:icon="@drawable/ic_language_title"
+        android:title="@string/my_languages"
+        app:showAsAction="ifRoom"/>
+
+    <item
+        android:id="@+id/action_open_in_browser"
+        android:title="@string/open_in_browser"
+        android:icon="@drawable/ic_open_in_browser_title"
+        app:showAsAction="ifRoom"/>
+
+</menu>

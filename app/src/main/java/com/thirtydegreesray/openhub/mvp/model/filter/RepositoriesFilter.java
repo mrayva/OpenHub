@@ -65,6 +65,16 @@ public class RepositoriesFilter implements Parcelable {
     private SortDirection sortDirection = SortDirection.Asc;
     private Kind kind = Kind.All;
 
+    /**
+     * Client-side only, same reasoning as Kind above - GitHub's plain
+     * list-repos REST endpoints (unlike the Search API Trending/Created/My
+     * Topics/Search use) have no language query param at all. Null means no
+     * language filter. Holds the display NAME (e.g. "Python"), not a search
+     * slug, since it's matched directly against Repository.getLanguage(),
+     * which returns that same linguist display name.
+     */
+    private String languageName;
+
     public static RepositoriesFilter generateFromDrawer(@NonNull NavigationView navView){
         RepositoriesFilter filter = new RepositoriesFilter();
         MenuItem typeItem = ViewUtils.getSelectedMenu(navView.getMenu().findItem(R.id.nav_type_chooser));
@@ -119,6 +129,13 @@ public class RepositoriesFilter implements Parcelable {
         filter.kind = kindItem != null && KIND_RELATION.containsKey(kindItem.getItemId())
                 ? KIND_RELATION.get(kindItem.getItemId()) : Kind.All;
 
+        MenuItem languageChooserItem = navView.getMenu().findItem(R.id.nav_language_chooser);
+        if (languageChooserItem != null) {
+            MenuItem languageItem = ViewUtils.getSelectedMenu(languageChooserItem);
+            filter.languageName = (languageItem != null && languageItem.getItemId() != R.id.nav_language_all)
+                    ? languageItem.getTitle().toString() : null;
+        }
+
         return filter;
     }
 
@@ -160,6 +177,10 @@ public class RepositoriesFilter implements Parcelable {
         return kind == null ? Kind.All : kind;
     }
 
+    public String getLanguageName() {
+        return languageName;
+    }
+
     private RepositoriesFilter setType(Type type) {
         this.type = type;
         return this;
@@ -186,6 +207,7 @@ public class RepositoriesFilter implements Parcelable {
         dest.writeInt(this.sort == null ? -1 : this.sort.ordinal());
         dest.writeInt(this.sortDirection == null ? -1 : this.sortDirection.ordinal());
         dest.writeInt(this.kind == null ? -1 : this.kind.ordinal());
+        dest.writeString(this.languageName);
     }
 
     public RepositoriesFilter() {
@@ -200,6 +222,7 @@ public class RepositoriesFilter implements Parcelable {
         this.sortDirection = tmpSortDirection == -1 ? null : SortDirection.values()[tmpSortDirection];
         int tmpKind = in.readInt();
         this.kind = tmpKind == -1 ? null : Kind.values()[tmpKind];
+        this.languageName = in.readString();
     }
 
     public static final Parcelable.Creator<RepositoriesFilter> CREATOR = new Parcelable.Creator<RepositoriesFilter>() {

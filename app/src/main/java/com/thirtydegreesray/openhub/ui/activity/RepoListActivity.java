@@ -10,14 +10,17 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 
 import com.thirtydegreesray.dataautoaccess.annotation.AutoAccess;
+import com.thirtydegreesray.openhub.AppApplication;
 import com.thirtydegreesray.openhub.AppConfig;
 import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.R2;
 import com.thirtydegreesray.openhub.mvp.contract.base.IBaseContract;
 import com.thirtydegreesray.openhub.mvp.model.Collection;
 import com.thirtydegreesray.openhub.mvp.model.Topic;
+import com.thirtydegreesray.openhub.mvp.model.TrendingLanguage;
 import com.thirtydegreesray.openhub.mvp.model.filter.RepositoriesFilter;
 import com.thirtydegreesray.openhub.ui.activity.base.SingleFragmentActivity;
 import com.thirtydegreesray.openhub.ui.fragment.RepositoriesFragment;
@@ -25,6 +28,9 @@ import com.thirtydegreesray.openhub.ui.fragment.base.OnDrawerSelectedListener;
 import com.thirtydegreesray.openhub.util.AppOpener;
 import com.thirtydegreesray.openhub.util.BundleHelper;
 import com.thirtydegreesray.openhub.util.StringUtils;
+import com.thirtydegreesray.openhub.util.TrendingLanguageHelper;
+
+import java.util.ArrayList;
 
 /**
  * Created by ThirtyDegreesRay on 2017/8/23 18:15:40
@@ -69,6 +75,8 @@ public class RepoListActivity extends SingleFragmentActivity<IBaseContract.Prese
         context.startActivity(intent);
     }
 
+    private static final int SORT_LANGUAGE_REQUEST_CODE = 100;
+
     @AutoAccess RepositoriesFragment.RepositoriesType type;
     @AutoAccess String user;
     @AutoAccess String repo;
@@ -76,6 +84,8 @@ public class RepoListActivity extends SingleFragmentActivity<IBaseContract.Prese
     @AutoAccess Topic topic;
 
     private OnDrawerSelectedListener listener;
+    private TrendingLanguage selectedLanguage;
+    private ArrayList<TrendingLanguage> topicLanguages;
 
     @Override
     protected int getContentView() {
@@ -111,17 +121,31 @@ public class RepoListActivity extends SingleFragmentActivity<IBaseContract.Prese
     @Override
     protected void onNavItemSelected(@NonNull MenuItem item, boolean isStartDrawer) {
         super.onNavItemSelected(item, isStartDrawer);
+        if (isTopic()) {
+            TrendingLanguage curSelectedLanguage = topicLanguages.get(item.getOrder() - 1);
+            if (!curSelectedLanguage.equals(selectedLanguage)) {
+                selectedLanguage = curSelectedLanguage;
+                getFragment().onLanguageUpdate(selectedLanguage);
+            }
+            return;
+        }
         listener.onDrawerSelected(navViewEnd, item);
     }
 
     @Override
     protected boolean isEndDrawerMultiSelect() {
-        return true;
+        // Owned/Public's drawer has several independent checkable groups
+        // (Type/Kind/Sort/Language) open at once, so each selection must be
+        // applied without closing the drawer or auto-unchecking siblings.
+        // Topic's language drawer is a single flat group - plain single-select
+        // behavior (auto-check + close), same as Trending/Created/My Topics/
+        // Search's language drawers.
+        return isFilterEnable();
     }
 
     @Override
     protected int getEndDrawerToggleMenuItemId() {
-        return R.id.nav_sort;
+        return isTopic() ? R.id.nav_languages : R.id.nav_sort;
     }
 
     @Override
@@ -134,8 +158,9 @@ public class RepoListActivity extends SingleFragmentActivity<IBaseContract.Prese
             // dialog (see showForksSortDialog()) is enough; the end drawer
             // stays disabled for this type (see isFilterEnable()).
             getMenuInflater().inflate(R.menu.menu_sort, menu);
-        } else if(RepositoriesFragment.RepositoriesType.COLLECTION.equals(type)
-                || RepositoriesFragment.RepositoriesType.TOPIC.equals(type)){
+        } else if(RepositoriesFragment.RepositoriesType.TOPIC.equals(type)){
+            getMenuInflater().inflate(R.menu.menu_topic_repos, menu);
+        } else if(RepositoriesFragment.RepositoriesType.COLLECTION.equals(type)){
             getMenuInflater().inflate(R.menu.menu_open_in_browser, menu);
         }
         return true;
@@ -146,7 +171,7 @@ public class RepoListActivity extends SingleFragmentActivity<IBaseContract.Prese
     @Override
     protected void initActivity() {
         super.initActivity();
-        setEndDrawerEnable(isFilterEnable());
+        setEndDrawerEnable(isFilterEnable() || isTopic());
     }
 
     @Override
@@ -195,10 +220,80 @@ public class RepoListActivity extends SingleFragmentActivity<IBaseContract.Prese
                 RepositoriesFragment.RepositoriesType.PUBLIC.equals(type);
     }
 
+    private boolean isTopic(){
+        return RepositoriesFragment.RepositoriesType.TOPIC.equals(type);
+    }
+
     private void intiFilter(){
         if(isFilterEnable()){
             updateEndDrawerContent(R.menu.menu_repositories_filter);
             RepositoriesFilter.initDrawer(navViewEnd, type);
+            populateLanguageChooser();
+        } else if(isTopic()){
+            initTopicLanguageDrawer();
+        }
+    }
+
+    /**
+     * Fills in the "Language" submenu of menu_repositories_filter.xml with
+     * the user's curated language list, same list/source Trending/Created/My
+     * Topics/Search already share - just nested inside this drawer's
+     * existing Type/Kind/Sort choosers instead of a standalone flat drawer,
+     * since Owned/Public only have the one end-drawer to work with.
+     * Client-side only (see RepositoriesPresenter.filterByLanguage()) -
+     * GitHub's plain list-repos REST endpoints have no language param.
+     */
+    private void populateLanguageChooser(){
+        if(navViewEnd == null) return;
+        MenuItem languageChooserItem = navViewEnd.getMenu().findItem(R.id.nav_language_chooser);
+        if(languageChooserItem == null || languageChooserItem.getSubMenu() == null) return;
+        Menu subMenu = languageChooserItem.getSubMenu();
+        ArrayList<TrendingLanguage> languages = TrendingLanguageHelper.getLanguagesFromLocal(
+                AppApplication.get().getAppComponent().getDaoSession(), getActivity());
+        for(TrendingLanguage language : languages){
+            String slug = language.getSlug();
+            // "All languages" is already nav_language_all; "Unknown languages"
+            // has no equivalent here (a repo with no detected language just
+            // won't match any specific entry, same net effect).
+            if(StringUtils.isBlank(slug) || "unknown".equals(slug)) continue;
+            subMenu.add(R.id.group_language_chooser, language.getOrder(), language.getOrder(), language.getName());
+        }
+    }
+
+    private void initTopicLanguageDrawer(){
+        if(navViewEnd == null) return;
+        updateTopicLanguageDrawer();
+        View view = getLayoutInflater().inflate(R.layout.layout_trending_drawer_bottom, null);
+        navViewEnd.addHeaderView(view);
+        View editView = view.findViewById(R.id.language_edit_bn);
+        editView.setOnClickListener(v -> LanguagesEditorActivity.show(getActivity(),
+                LanguagesEditorActivity.LanguageEditorMode.Sort, SORT_LANGUAGE_REQUEST_CODE));
+    }
+
+    private void updateTopicLanguageDrawer(){
+        if(navViewEnd == null) return;
+        updateEndDrawerContent(R.menu.drawer_menu_trending);
+        topicLanguages = TrendingLanguageHelper.getLanguagesFromLocal(
+                AppApplication.get().getAppComponent().getDaoSession(), getActivity());
+        Menu menu = navViewEnd.getMenu();
+        for(TrendingLanguage language : topicLanguages){
+            menu.add(R.id.group_languages, language.getOrder(), language.getOrder(), language.getName());
+        }
+        menu.setGroupCheckable(R.id.group_languages, true, true);
+        if(topicLanguages.contains(selectedLanguage)){
+            //maybe list size changed, and order changed too
+            selectedLanguage = topicLanguages.get(topicLanguages.indexOf(selectedLanguage));
+        } else {
+            selectedLanguage = topicLanguages.get(0);
+        }
+        menu.findItem(selectedLanguage.getOrder()).setChecked(true);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if(requestCode == SORT_LANGUAGE_REQUEST_CODE && resultCode == RESULT_OK){
+            updateTopicLanguageDrawer();
         }
     }
 

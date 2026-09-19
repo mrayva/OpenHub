@@ -48,6 +48,21 @@
         </menu>
     </item>
 
+    <item
+        android:id="@+id/nav_language_chooser"
+        android:title="@string/language">
+        <menu>
+            <group
+                android:id="@+id/group_language_chooser"
+                android:checkableBehavior="single">
+                <item
+                    android:id="@+id/nav_language_all"
+                    android:title="@string/all_languages"
+                    android:checked="true"/>
+            </group>
+        </menu>
+    </item>
+
     <!--created, updated, pushed, full_name.-->
     <item
         android:id="@+id/nav_sort"

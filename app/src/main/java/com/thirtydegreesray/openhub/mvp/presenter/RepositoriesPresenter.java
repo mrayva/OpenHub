@@ -240,6 +240,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                 int rawCount = pageItems.size();
                 if (kindFilterable) {
                     pageItems = filterByKind(pageItems);
+                    pageItems = filterByLanguage(pageItems);
                 }
                 int appendedCount;
                 if (isReLoad || readCacheFirst || repos == null || page == 1) {
@@ -299,6 +300,16 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     if (repository.isArchived()) filtered.add(repository);
                     break;
             }
+        }
+        return filtered;
+    }
+
+    private ArrayList<Repository> filterByLanguage(ArrayList<Repository> items) {
+        String languageName = filter == null ? null : filter.getLanguageName();
+        if (StringUtils.isBlank(languageName)) return items;
+        ArrayList<Repository> filtered = new ArrayList<>();
+        for (Repository repository : items) {
+            if (languageName.equals(repository.getLanguage())) filtered.add(repository);
         }
         return filtered;
     }
@@ -831,8 +842,12 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
     private void initSearchModelForTopic(){
         if(searchModel == null){
             searchModel = new SearchModel(SearchModel.SearchType.Repository);
-            searchModel.setQuery("topic:" + topic.getId());
         }
+        // Rebuilt every call (not just when searchModel is first created) so
+        // a language change - set via setLanguage(), pushed through
+        // RepositoriesFragment.onLanguageUpdate() same as TRENDING - takes
+        // effect on the next reload without needing a new SearchModel.
+        searchModel.setQuery(buildTopicQuery(topic.getId()));
     }
 
     /**
