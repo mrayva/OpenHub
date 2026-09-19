@@ -363,13 +363,19 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                         }
                         // GitHub's search API has no "created" sort value (it's
                         // silently ignored - confirmed against the live API,
-                        // both asc/desc order came back identical), unlike
-                        // stars/updated which it sorts natively. So for
-                        // "recently added", re-sort what we've fetched so far
-                        // client-side instead of trusting the API's order.
-                        if (RepositoriesFragment.RepositoriesType.TOPICS_SEARCH.equals(type)
-                                && "created".equals(sort)) {
-                            sortRepos(repos, sort);
+                        // both asc/desc order came back identical). "updated"
+                        // it does sort natively, but by a different field
+                        // (updated_at) than the one displayed on each row
+                        // (pushedAt) - see sortRepos()'s comment. Both need a
+                        // client-side re-sort of what's been fetched so far;
+                        // reading sort/desc from searchModel (not the "sort"
+                        // field, which only TOPICS_SEARCH populates) covers
+                        // both TOPICS_SEARCH and SEARCH, the two types that
+                        // reach this path with a real sort selection - TOPIC
+                        // never sets a sort on its query at all.
+                        String searchSort = searchModel == null ? null : searchModel.getSort();
+                        if ("created".equals(searchSort) || "updated".equals(searchSort)) {
+                            sortRepos(repos, searchSort, searchModel.isDesc());
                             // a full re-sort can move existing rows, not just
                             // add new ones at the end - not safe to treat as
                             // a pure append anymore.
@@ -723,7 +729,7 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     }
                 }
             }
-            sortRepos(repos, sortField);
+            sortRepos(repos, sortField, true);
             mView.hideLoading();
             // every load-more round re-sorts the whole merged pool, so old
             // items can move too - never a pure append.
@@ -890,21 +896,35 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
      * issues/updated - "created" is silently ignored (confirmed against the
      * live API: asc and desc came back identical), so "recently added" has
      * to be sorted client-side instead of trusting the API's order.
+     *
+     * "updated" is also re-sorted client-side. Confirmed directly against
+     * the live API (GET /search/repositories?q=topic:postgres-extension&
+     * sort=updated&order=desc) that its result order does not actually match
+     * descending updated_at, let alone pushedAt (the field this app displays
+     * as "Updated X ago" - RepositoriesAdapter): GitHub's search index
+     * appears to rank by a separate, possibly lagged internal signal rather
+     * than the live updated_at/pushed_at values returned in the same
+     * response. Re-deriving the order client-side from those live values -
+     * the same field actually shown on each row - is correct regardless of
+     * whatever GitHub's own ranking is doing internally.
      */
-    private void sortRepos(ArrayList<Repository> list, String sortField) {
+    private void sortRepos(ArrayList<Repository> list, String sortField, boolean desc) {
         Collections.sort(list, (a, b) -> {
+            Date dateA;
+            Date dateB;
             if ("created".equals(sortField)) {
-                Date dateA = a.getCreatedAt();
-                Date dateB = b.getCreatedAt();
-                if (dateA == null || dateB == null) return 0;
-                return dateB.compareTo(dateA);
+                dateA = a.getCreatedAt();
+                dateB = b.getCreatedAt();
             } else if ("updated".equals(sortField)) {
-                Date dateA = a.getUpdatedAt();
-                Date dateB = b.getUpdatedAt();
-                if (dateA == null || dateB == null) return 0;
-                return dateB.compareTo(dateA);
+                dateA = a.getPushedAt();
+                dateB = b.getPushedAt();
+            } else {
+                int cmp = Integer.compare(a.getStargazersCount(), b.getStargazersCount());
+                return desc ? -cmp : cmp;
             }
-            return Integer.compare(b.getStargazersCount(), a.getStargazersCount());
+            if (dateA == null || dateB == null) return 0;
+            int cmp = dateA.compareTo(dateB);
+            return desc ? -cmp : cmp;
         });
     }
 
