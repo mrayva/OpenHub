@@ -8,9 +8,11 @@ import com.thirtydegreesray.dataautoaccess.annotation.AutoAccess;
 import com.thirtydegreesray.openhub.dao.DaoSession;
 import com.thirtydegreesray.openhub.mvp.contract.ISearchContract;
 import com.thirtydegreesray.openhub.mvp.model.SearchModel;
+import com.thirtydegreesray.openhub.mvp.model.TrendingLanguage;
 import com.thirtydegreesray.openhub.mvp.presenter.base.BasePresenter;
 import com.thirtydegreesray.openhub.util.PrefUtils;
 import com.thirtydegreesray.openhub.util.StringUtils;
+import com.thirtydegreesray.openhub.util.TrendingLanguageHelper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -25,10 +27,21 @@ public class SearchPresenter extends BasePresenter<ISearchContract.View>
         implements ISearchContract.Presenter {
 
     @AutoAccess ArrayList<SearchModel> searchModels;
+    private ArrayList<TrendingLanguage> languages;
 
     @Inject
     public SearchPresenter(DaoSession daoSession) {
         super(daoSession);
+    }
+
+    @Override
+    public ArrayList<TrendingLanguage> getLanguagesFromLocal() {
+        languages = TrendingLanguageHelper.getLanguagesFromLocal(daoSession, getContext());
+        return languages;
+    }
+
+    public ArrayList<TrendingLanguage> getLanguages() {
+        return languages;
     }
 
     @Override

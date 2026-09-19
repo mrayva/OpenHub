@@ -6,6 +6,7 @@ import androidx.annotation.NonNull;
 
 import com.thirtydegreesray.openhub.mvp.contract.base.IBaseContract;
 import com.thirtydegreesray.openhub.mvp.model.SearchModel;
+import com.thirtydegreesray.openhub.mvp.model.TrendingLanguage;
 
 import java.util.ArrayList;
 
@@ -25,6 +26,7 @@ public interface ISearchContract {
         @NonNull ArrayList<String> getSearchRecordList();
         void addSearchRecord(@NonNull String record);
         void removeSearchRecord(@NonNull String record);
+        ArrayList<TrendingLanguage> getLanguagesFromLocal();
     }
 
 }

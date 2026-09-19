@@ -10,6 +10,11 @@
         app:actionViewClass="androidx.appcompat.widget.SearchView"
         app:showAsAction="ifRoom|collapseActionView"/>
     <item
+        android:id="@+id/nav_languages"
+        android:icon="@drawable/ic_language_title"
+        android:title="@string/my_languages"
+        app:showAsAction="ifRoom"/>
+    <item
         android:id="@+id/action_sort"
         android:icon="@drawable/ic_sort_title"
         android:title="@string/sort"
