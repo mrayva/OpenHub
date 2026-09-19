@@ -11,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.graphics.Bitmap;
 import android.net.Uri;
+import android.os.Build;
 import androidx.annotation.NonNull;
 import androidx.browser.customtabs.CustomTabsIntent;
 import android.widget.Toast;
@@ -55,14 +56,19 @@ public class AppOpener {
         if (PrefUtils.isCustomTabsEnable() &&
                 (customTabsPackageName = CustomTabsHelper.INSTANCE.getBestPackageName(context) ) != null) {
             Bitmap backIconBitmap = ViewUtils.getBitmapFromResource(context, R.drawable.ic_arrow_back_title);
+            // Mandatory at targetSdk 31+ (throws IllegalArgumentException without
+            // it); neither receiver needs its Intent extras mutated by the
+            // Custom Tabs host, so FLAG_IMMUTABLE is correct.
+            int pendingIntentFlags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                    ? PendingIntent.FLAG_IMMUTABLE : 0;
             Intent shareIntent = new Intent(context.getApplicationContext(), ShareBroadcastReceiver.class);
             shareIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             PendingIntent sharePendingIntent = PendingIntent.getBroadcast(
-                    context.getApplicationContext(), 0, shareIntent, 0);
+                    context.getApplicationContext(), 0, shareIntent, pendingIntentFlags);
             Intent copyIntent = new Intent(context.getApplicationContext(), CopyBroadcastReceiver.class);
             copyIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             PendingIntent copyPendingIntent = PendingIntent.getBroadcast(
-                    context.getApplicationContext(), 0, copyIntent, 0);
+                    context.getApplicationContext(), 0, copyIntent, pendingIntentFlags);
 
             CustomTabsIntent customTabsIntent = new CustomTabsIntent.Builder()
                     .setToolbarColor(ViewUtils.getPrimaryColor(context))

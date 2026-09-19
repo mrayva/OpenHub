@@ -12,6 +12,8 @@ import android.net.Uri;
 import android.os.Environment;
 import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
+
 import com.orhanobut.logger.Logger;
 import com.tbruyelle.rxpermissions.RxPermissions;
 import com.thirtydegreesray.openhub.R;
@@ -101,8 +103,11 @@ public class Downloader {
         downloadManager = (DownloadManager) mContext.getSystemService(Context.DOWNLOAD_SERVICE);
         downloadId = downloadManager.enqueue(request);
 
-        mContext.registerReceiver(receiver,
-                new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE));
+        // System broadcast only (DownloadManager itself), never sent by other
+        // apps - RECEIVER_NOT_EXPORTED is mandatory at API 33+ and correct here.
+        ContextCompat.registerReceiver(mContext, receiver,
+                new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE),
+                ContextCompat.RECEIVER_NOT_EXPORTED);
 
         Toasty.success(mContext, mContext.getString(R.string.download_start)).show();
     }

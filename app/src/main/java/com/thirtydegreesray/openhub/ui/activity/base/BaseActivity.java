@@ -24,6 +24,10 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.fragment.app.Fragment;
 
 import com.bumptech.glide.Glide;
@@ -98,6 +102,23 @@ BaseActivity<P extends IBaseContract.Presenter>
             DataAutoAccess.getData(AppData.INSTANCE, savedInstanceState);
         }
         getScreenSize();
+
+        // targetSdk 35+ draws edge-to-edge by default (and targeting 36 removes
+        // the opt-out entirely) - this app has no per-screen inset handling
+        // anywhere (confirmed: no WindowInsets/fitsSystemWindows on the main
+        // themes), so without this every toolbar would render under the status
+        // bar and bottom content under the nav bar. Rather than redesign each of
+        // ~50 layouts, apply systemBars() as padding on the standard content
+        // root once here, restoring the pre-edge-to-edge "content boxed between
+        // system bars" layout app-wide. A screen that wants true edge-to-edge
+        // (none currently do) can still consume/clear this padding itself.
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        ViewCompat.setOnApplyWindowInsetsListener(findViewById(android.R.id.content),
+                (view, insets) -> {
+                    Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+                    view.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom);
+                    return insets;
+                });
 
         if(getContentView() != 0){
             setContentView(getContentView());

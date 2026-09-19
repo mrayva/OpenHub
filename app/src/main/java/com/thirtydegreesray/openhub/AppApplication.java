@@ -10,6 +10,8 @@ import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.os.Build;
 
+import androidx.core.content.ContextCompat;
+
 import com.google.android.material.color.DynamicColors;
 import com.orhanobut.logger.AndroidLogAdapter;
 import com.orhanobut.logger.Logger;
@@ -94,7 +96,9 @@ public class AppApplication extends Application {
             filter = new IntentFilter();
             filter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
         }
-        registerReceiver(receiver, filter);
+        // System broadcast only (connectivity changes), never sent by other
+        // apps - RECEIVER_NOT_EXPORTED is mandatory at API 33+ and correct here.
+        ContextCompat.registerReceiver(this, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED);
 
         NetHelper.INSTANCE.init(this);
     }
