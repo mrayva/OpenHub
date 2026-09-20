@@ -5,7 +5,11 @@ package com.thirtydegreesray.openhub.mvp.model;
 import android.os.Parcel;
 import android.os.Parcelable;
 
+import androidx.annotation.Nullable;
+
 import com.google.gson.annotations.SerializedName;
+
+import java.util.Date;
 
 /**
  * Created by ThirtyDegreesRay on 2017/8/15 17:56:03
@@ -69,6 +73,19 @@ public class Branch implements Parcelable {
 
     public void setCommit(RepoCommit commit) {
         this.commit = commit;
+    }
+
+    /**
+     * Null until the presenter has fetched this entry's commit info (the
+     * branches/tags list endpoints themselves never include a date - see
+     * the sample response at the bottom of this file).
+     */
+    @Nullable
+    public Date getUpdatedAt() {
+        if (commit == null || commit.getCommit() == null || commit.getCommit().getCommitter() == null) {
+            return null;
+        }
+        return commit.getCommit().getCommitter().getDate();
     }
 
     @Override

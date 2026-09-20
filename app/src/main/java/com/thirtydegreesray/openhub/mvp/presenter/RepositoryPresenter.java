@@ -25,6 +25,8 @@ import com.thirtydegreesray.openhub.util.StarWishesHelper;
 import com.thirtydegreesray.openhub.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
@@ -119,11 +121,12 @@ public class RepositoryPresenter extends BasePresenter<IRepositoryContract.View>
                         return loadBranchDates(branches).map(new Func1<List<Branch>, Response<ArrayList<Branch>>>() {
                             @Override
                             public Response<ArrayList<Branch>> call(List<Branch> list) {
-                                // branches/tags were already updated in place by
-                                // loadBranchDates() - the tags response is just
-                                // reused as a pass-through carrier so the outer
-                                // HttpProgressSubscriber's generic type stays
-                                // unchanged.
+                                // branches/tags (and their dates) were already
+                                // updated in place by loadBranchDates() - the
+                                // tags response is just reused as a pass-through
+                                // carrier so the outer HttpProgressSubscriber's
+                                // generic type stays unchanged.
+                                sortBranchesByRecency(branches);
                                 return tagsResponse;
                             }
                         });
@@ -171,6 +174,30 @@ public class RepositoryPresenter extends BasePresenter<IRepositoryContract.View>
                     }
                 })
                 .toList();
+    }
+
+    /**
+     * Most-recently-updated first, matching GitHub's own "active branches"
+     * ordering - branches are kept ahead of tags (they're the more commonly
+     * browsed group), each group sorted independently by commit date
+     * descending. An entry whose date lookup failed (see loadBranchDates())
+     * sorts after every dated entry in its group rather than being dropped.
+     */
+    private void sortBranchesByRecency(ArrayList<Branch> list) {
+        Collections.sort(list, new Comparator<Branch>() {
+            @Override
+            public int compare(Branch a, Branch b) {
+                if (a.isBranch() != b.isBranch()) {
+                    return a.isBranch() ? -1 : 1;
+                }
+                Date dateA = a.getUpdatedAt();
+                Date dateB = b.getUpdatedAt();
+                if (dateA == null && dateB == null) return 0;
+                if (dateA == null) return 1;
+                if (dateB == null) return -1;
+                return dateB.compareTo(dateA);
+            }
+        });
     }
 
     @Override

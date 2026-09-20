@@ -12,11 +12,12 @@ import android.widget.TextView;
 import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.R2;
 import com.thirtydegreesray.openhub.mvp.model.Branch;
-import com.thirtydegreesray.openhub.mvp.model.CommitGitInfo;
 import com.thirtydegreesray.openhub.ui.adapter.base.BaseAdapter;
 import com.thirtydegreesray.openhub.ui.adapter.base.BaseViewHolder;
 import com.thirtydegreesray.openhub.util.StringUtils;
 import com.thirtydegreesray.openhub.util.ViewUtils;
+
+import java.util.Date;
 
 import butterknife.BindView;
 
@@ -49,10 +50,10 @@ public class BranchesAdapter extends BaseAdapter<BranchesAdapter.ViewHolder, Bra
         Branch branch = data.get(position);
         holder.icon.setImageResource(branch.isBranch() ? R.drawable.ic_branch : R.drawable.ic_tag);
         holder.name.setText(branch.getName());
-        CommitGitInfo commitInfo = branch.getCommit() == null ? null : branch.getCommit().getCommit();
-        if (commitInfo != null && commitInfo.getCommitter() != null && commitInfo.getCommitter().getDate() != null) {
+        Date updatedAt = branch.getUpdatedAt();
+        if (updatedAt != null) {
             holder.updatedAt.setText(String.format(getString(R.string.updated_at_format),
-                    StringUtils.getNewsTimeStr(context, commitInfo.getCommitter().getDate())));
+                    StringUtils.getNewsTimeStr(context, updatedAt)));
             holder.updatedAt.setVisibility(View.VISIBLE);
         } else {
             holder.updatedAt.setVisibility(View.GONE);
