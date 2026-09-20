@@ -12,8 +12,10 @@ import android.widget.TextView;
 import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.R2;
 import com.thirtydegreesray.openhub.mvp.model.Branch;
+import com.thirtydegreesray.openhub.mvp.model.CommitGitInfo;
 import com.thirtydegreesray.openhub.ui.adapter.base.BaseAdapter;
 import com.thirtydegreesray.openhub.ui.adapter.base.BaseViewHolder;
+import com.thirtydegreesray.openhub.util.StringUtils;
 import com.thirtydegreesray.openhub.util.ViewUtils;
 
 import butterknife.BindView;
@@ -47,6 +49,14 @@ public class BranchesAdapter extends BaseAdapter<BranchesAdapter.ViewHolder, Bra
         Branch branch = data.get(position);
         holder.icon.setImageResource(branch.isBranch() ? R.drawable.ic_branch : R.drawable.ic_tag);
         holder.name.setText(branch.getName());
+        CommitGitInfo commitInfo = branch.getCommit() == null ? null : branch.getCommit().getCommit();
+        if (commitInfo != null && commitInfo.getCommitter() != null && commitInfo.getCommitter().getDate() != null) {
+            holder.updatedAt.setText(String.format(getString(R.string.updated_at_format),
+                    StringUtils.getNewsTimeStr(context, commitInfo.getCommitter().getDate())));
+            holder.updatedAt.setVisibility(View.VISIBLE);
+        } else {
+            holder.updatedAt.setVisibility(View.GONE);
+        }
         if(branch.getName().equals(curBranch)){
             holder.rootLayout.setBackgroundColor(ViewUtils.getSelectedColor(context));
         }else{
@@ -59,6 +69,7 @@ public class BranchesAdapter extends BaseAdapter<BranchesAdapter.ViewHolder, Bra
         @BindView(R2.id.root_layout) LinearLayout rootLayout;
         @BindView(R2.id.icon) AppCompatImageView icon;
         @BindView(R2.id.name) TextView name;
+        @BindView(R2.id.updated_at) TextView updatedAt;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);

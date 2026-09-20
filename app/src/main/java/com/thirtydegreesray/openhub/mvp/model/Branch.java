@@ -16,6 +16,11 @@ public class Branch implements Parcelable {
     private String name;
     @SerializedName("zipball_url") private String zipballUrl;
     @SerializedName("tarball_url") private String tarballUrl;
+    // The branches/tags list endpoints only ever populate sha+url here (no
+    // date - see the sample response at the bottom of this file). Once the
+    // presenter fetches that commit's full info, it swaps this reference for
+    // a RepoCommitExt (a RepoCommit subclass) carrying the committer date.
+    private RepoCommit commit;
 
     private boolean isBranch = true;
 
@@ -58,6 +63,14 @@ public class Branch implements Parcelable {
         isBranch = branch;
     }
 
+    public RepoCommit getCommit() {
+        return commit;
+    }
+
+    public void setCommit(RepoCommit commit) {
+        this.commit = commit;
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -69,6 +82,7 @@ public class Branch implements Parcelable {
         dest.writeString(this.zipballUrl);
         dest.writeString(this.tarballUrl);
         dest.writeByte(this.isBranch ? (byte) 1 : (byte) 0);
+        dest.writeParcelable(this.commit, flags);
     }
 
     protected Branch(Parcel in) {
@@ -76,6 +90,7 @@ public class Branch implements Parcelable {
         this.zipballUrl = in.readString();
         this.tarballUrl = in.readString();
         this.isBranch = in.readByte() != 0;
+        this.commit = in.readParcelable(RepoCommit.class.getClassLoader());
     }
 
     public static final Parcelable.Creator<Branch> CREATOR = new Parcelable.Creator<Branch>() {

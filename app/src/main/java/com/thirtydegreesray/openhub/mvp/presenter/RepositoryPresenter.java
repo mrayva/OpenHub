@@ -17,13 +17,16 @@ import com.thirtydegreesray.openhub.http.core.HttpProgressSubscriber;
 import com.thirtydegreesray.openhub.http.core.HttpResponse;
 import com.thirtydegreesray.openhub.mvp.contract.IRepositoryContract;
 import com.thirtydegreesray.openhub.mvp.model.Branch;
+import com.thirtydegreesray.openhub.mvp.model.RepoCommitExt;
 import com.thirtydegreesray.openhub.mvp.model.Repository;
 import com.thirtydegreesray.openhub.mvp.presenter.base.BasePresenter;
 import com.thirtydegreesray.openhub.ui.activity.RepositoryActivity;
 import com.thirtydegreesray.openhub.util.StarWishesHelper;
+import com.thirtydegreesray.openhub.util.StringUtils;
 
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.UUID;
 
 import javax.inject.Inject;
@@ -107,8 +110,67 @@ public class RepositoryPresenter extends BasePresenter<IRepositoryContract.View>
                         branches = arrayListResponse.body();
                         return getRepoService().getTags(owner, repoName);
                     }
+                })
+                .flatMap(new Func1<Response<ArrayList<Branch>>, Observable<Response<ArrayList<Branch>>>>() {
+                    @Override
+                    public Observable<Response<ArrayList<Branch>>> call(final Response<ArrayList<Branch>> tagsResponse) {
+                        setTags(tagsResponse.body());
+                        branches.addAll(tagsResponse.body());
+                        return loadBranchDates(branches).map(new Func1<List<Branch>, Response<ArrayList<Branch>>>() {
+                            @Override
+                            public Response<ArrayList<Branch>> call(List<Branch> list) {
+                                // branches/tags were already updated in place by
+                                // loadBranchDates() - the tags response is just
+                                // reused as a pass-through carrier so the outer
+                                // HttpProgressSubscriber's generic type stays
+                                // unchanged.
+                                return tagsResponse;
+                            }
+                        });
+                    }
                 });
         generalRxHttpExecute(observable, httpProgressSubscriber);
+    }
+
+    /**
+     * GitHub's branches/tags list endpoints only return each entry's commit
+     * sha+url, never a date (confirmed live against the real API) - the
+     * per-entry "Updated x ago" the branches dialog now shows requires one
+     * extra request per branch/tag to fetch that commit's actual date.
+     * Fanned out in parallel via flatMap rather than sequentially, capped by
+     * the fact that the branches/tags endpoints themselves are unpaginated
+     * (first 30 of each, so at most ~60 extra requests). A failure on any
+     * one commit lookup just leaves that entry without a date rather than
+     * failing the whole dialog - not worth surfacing an error toast over a
+     * single missing timestamp.
+     */
+    private Observable<List<Branch>> loadBranchDates(ArrayList<Branch> list) {
+        return Observable.from(list)
+                .flatMap(new Func1<Branch, Observable<Branch>>() {
+                    @Override
+                    public Observable<Branch> call(final Branch branch) {
+                        if (branch.getCommit() == null || StringUtils.isBlank(branch.getCommit().getSha())) {
+                            return Observable.just(branch);
+                        }
+                        return getCommitService().getCommitInfo(false, owner, repoName, branch.getCommit().getSha())
+                                .map(new Func1<Response<RepoCommitExt>, Branch>() {
+                                    @Override
+                                    public Branch call(Response<RepoCommitExt> response) {
+                                        if (response.body() != null) {
+                                            branch.setCommit(response.body());
+                                        }
+                                        return branch;
+                                    }
+                                })
+                                .onErrorReturn(new Func1<Throwable, Branch>() {
+                                    @Override
+                                    public Branch call(Throwable throwable) {
+                                        return branch;
+                                    }
+                                });
+                    }
+                })
+                .toList();
     }
 
     @Override
