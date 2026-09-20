@@ -23,6 +23,7 @@ import com.thirtydegreesray.openhub.service.NetBroadcastReceiver;
 import com.thirtydegreesray.openhub.util.AppUtils;
 import com.thirtydegreesray.openhub.util.CrashHandler;
 import com.thirtydegreesray.openhub.util.IgnoredRepoHelper;
+import com.thirtydegreesray.openhub.util.MyTopicHelper;
 import com.thirtydegreesray.openhub.util.NetHelper;
 
 /**
@@ -61,6 +62,7 @@ public class AppApplication extends Application {
                 .build();
         initNetwork();
         IgnoredRepoHelper.preload();
+        MyTopicHelper.preload();
         startTime = System.currentTimeMillis();
         Logger.t(TAG).i("application ok:" + (System.currentTimeMillis() - startTime));
 

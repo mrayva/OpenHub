@@ -11,4 +11,9 @@
         android:title="@string/my_languages"
         app:showAsAction="ifRoom"/>
 
+    <item
+        android:id="@+id/action_toggle_my_topic"
+        android:title="@string/add_to_my_topics"
+        app:showAsAction="never"/>
+
 </menu>

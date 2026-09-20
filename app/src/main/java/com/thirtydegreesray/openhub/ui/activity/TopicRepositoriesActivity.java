@@ -19,6 +19,7 @@ import com.thirtydegreesray.openhub.ui.adapter.base.FragmentPagerModel;
 import com.thirtydegreesray.openhub.ui.adapter.base.FragmentViewPagerAdapter;
 import com.thirtydegreesray.openhub.ui.fragment.RepositoriesFragment;
 import com.thirtydegreesray.openhub.util.BundleHelper;
+import com.thirtydegreesray.openhub.util.MyTopicHelper;
 import com.thirtydegreesray.openhub.util.TrendingLanguageHelper;
 
 import java.util.ArrayList;
@@ -116,7 +117,25 @@ public class TopicRepositoriesActivity extends PagerActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_topic_language, menu);
+        menu.findItem(R.id.action_toggle_my_topic).setTitle(MyTopicHelper.isMyTopic(topicSlug)
+                ? R.string.remove_from_my_topics : R.string.add_to_my_topics);
         return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        if (item.getItemId() == R.id.action_toggle_my_topic) {
+            if (MyTopicHelper.isMyTopic(topicSlug)) {
+                MyTopicHelper.remove(topicSlug);
+                showSuccessToast(String.format(getString(R.string.topic_removed_from_my_topics), topicSlug));
+            } else {
+                MyTopicHelper.add(topicSlug);
+                showSuccessToast(String.format(getString(R.string.topic_added_to_my_topics), topicSlug));
+            }
+            invalidateOptionsMenu();
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
     }
 
     private void initLanguagesDrawer() {

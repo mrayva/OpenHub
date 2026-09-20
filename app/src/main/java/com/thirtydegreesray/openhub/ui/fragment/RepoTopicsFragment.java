@@ -4,9 +4,11 @@ import android.os.Bundle;
 import android.view.View;
 
 import androidx.recyclerview.widget.DividerItemDecoration;
+import androidx.recyclerview.widget.ItemTouchHelper;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.snackbar.Snackbar;
 import com.thirtydegreesray.dataautoaccess.annotation.AutoAccess;
 import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.R2;
@@ -14,8 +16,10 @@ import com.thirtydegreesray.openhub.inject.component.AppComponent;
 import com.thirtydegreesray.openhub.mvp.model.Repository;
 import com.thirtydegreesray.openhub.ui.activity.TopicRepositoriesActivity;
 import com.thirtydegreesray.openhub.ui.adapter.RepoTopicsAdapter;
+import com.thirtydegreesray.openhub.ui.adapter.base.AddTopicSwipeCallback;
 import com.thirtydegreesray.openhub.ui.fragment.base.BaseFragment;
 import com.thirtydegreesray.openhub.util.BundleHelper;
+import com.thirtydegreesray.openhub.util.MyTopicHelper;
 
 import butterknife.BindView;
 
@@ -54,6 +58,19 @@ public class RepoTopicsFragment extends BaseFragment {
         recyclerView.setAdapter(adapter);
         adapter.setOnItemClickListener((position, view) ->
                 TopicRepositoriesActivity.show(getContext(), adapter.getData().get(position)));
+
+        new ItemTouchHelper(new AddTopicSwipeCallback(getContext(), position -> {
+            String slug = adapter.getData().get(position);
+            boolean added = MyTopicHelper.add(slug);
+            adapter.notifyItemChanged(position);
+            Snackbar snackbar = Snackbar.make(recyclerView, String.format(getString(added
+                    ? R.string.topic_added_to_my_topics : R.string.topic_already_in_my_topics), slug),
+                    Snackbar.LENGTH_LONG);
+            if (added) {
+                snackbar.setAction(R.string.undo, v -> MyTopicHelper.remove(slug));
+            }
+            snackbar.show();
+        })).attachToRecyclerView(recyclerView);
 
         if (repository.getTopics() == null || repository.getTopics().isEmpty()) {
             emptyLay.setVisibility(View.VISIBLE);

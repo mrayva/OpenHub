@@ -455,6 +455,11 @@
     <string name="no_ignored_repos">No ignored repos yet. Swipe left on a repo in Trending, Created or My Topics to add it here.</string>
     <string name="repo_ignored">%s ignored</string>
     <string name="repo_unignored">%s removed from ignore list</string>
+    <string name="topic_added_to_my_topics">%s added to My Topics</string>
+    <string name="topic_already_in_my_topics">%s is already in My Topics</string>
+    <string name="topic_removed_from_my_topics">%s removed from My Topics</string>
+    <string name="add_to_my_topics">Add to My Topics</string>
+    <string name="remove_from_my_topics">Remove from My Topics</string>
     <string name="apply_ignore_list">Apply ignore list</string>
     <string name="manage_ignore_list">Manage ignore list</string>
     <string name="export_ignore_list">Export ignore list</string>
