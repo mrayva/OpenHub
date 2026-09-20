@@ -52,6 +52,7 @@ import com.thirtydegreesray.openhub.util.StarWishesHelper;
 import com.thirtydegreesray.openhub.util.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Locale;
 
 import butterknife.BindView;
@@ -230,8 +231,10 @@ public class RepositoryActivity extends PagerActivity<RepositoryPresenter>
 
     @Override
     public void showBranchesAndTags(final ArrayList<Branch> list, Branch curBranch) {
+        final ArrayList<Branch> displayList = buildBranchDisplayList(list);
+
         BranchesAdapter branchesAdapter = new BranchesAdapter(getActivity(), curBranch.getName());
-        branchesAdapter.setData(list);
+        branchesAdapter.setData(displayList);
 
         final RecyclerView recyclerView = new RecyclerView(getActivity());
         recyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
@@ -252,7 +255,8 @@ public class RepositoryActivity extends PagerActivity<RepositoryPresenter>
         branchesAdapter.setOnItemClickListener(new BaseViewHolder.OnItemClickListener() {
             @Override
             public void onItemClick(int position, @NonNull View view) {
-                Branch branch = list.get(position);
+                Branch branch = displayList.get(position);
+                if (branch.isHeader()) return;
                 mPresenter.getRepository().setDefaultBranch(branch.getName());
                 mPresenter.setCurBranch(branch);
                 noticeBranchChanged(branch);
@@ -261,6 +265,58 @@ public class RepositoryActivity extends PagerActivity<RepositoryPresenter>
             }
         });
 
+    }
+
+    /**
+     * GitHub's own branches page buckets branches into "Active" (a commit
+     * in the last 3 months, confirmed against GitHub's docs) vs "Stale"
+     * (older - or, unlike GitHub's page, unknown: RepositoryPresenter's
+     * per-entry commit-date lookup can fail for a given branch, and an
+     * unknown date is treated as stale rather than active), ordered most-
+     * recently-updated first within each bucket. Tags get their own
+     * trailing section for symmetry, since this dialog - unlike GitHub's
+     * web UI, which keeps branches and tags on separate pages - mixes both
+     * into one list.
+     *
+     * `list` arrives already sorted this way (branches before tags, each
+     * group ordered by recency descending - see RepositoryPresenter.
+     * sortBranchesByRecency()); this only needs to split it into buckets
+     * and interleave section headers, not resort it.
+     */
+    private ArrayList<Branch> buildBranchDisplayList(ArrayList<Branch> list) {
+        final long STALE_THRESHOLD_MILLIS = 90L * 24 * 60 * 60 * 1000;
+        long now = System.currentTimeMillis();
+
+        ArrayList<Branch> active = new ArrayList<>();
+        ArrayList<Branch> stale = new ArrayList<>();
+        ArrayList<Branch> tags = new ArrayList<>();
+        for (Branch branch : list) {
+            if (!branch.isBranch()) {
+                tags.add(branch);
+                continue;
+            }
+            Date updatedAt = branch.getUpdatedAt();
+            if (updatedAt != null && (now - updatedAt.getTime()) < STALE_THRESHOLD_MILLIS) {
+                active.add(branch);
+            } else {
+                stale.add(branch);
+            }
+        }
+
+        ArrayList<Branch> displayList = new ArrayList<>();
+        if (!active.isEmpty()) {
+            displayList.add(Branch.newHeader(getString(R.string.active_branches)));
+            displayList.addAll(active);
+        }
+        if (!stale.isEmpty()) {
+            displayList.add(Branch.newHeader(getString(R.string.stale_branches)));
+            displayList.addAll(stale);
+        }
+        if (!tags.isEmpty()) {
+            displayList.add(Branch.newHeader(getString(R.string.tags)));
+            displayList.addAll(tags);
+        }
+        return displayList;
     }
 
     @Override

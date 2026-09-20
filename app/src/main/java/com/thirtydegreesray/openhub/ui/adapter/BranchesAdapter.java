@@ -25,7 +25,10 @@ import butterknife.BindView;
  * Created by ThirtyDegreesRay on 2017/8/15 22:50:29
  */
 
-public class BranchesAdapter extends BaseAdapter<BranchesAdapter.ViewHolder, Branch> {
+public class BranchesAdapter extends BaseAdapter<BaseViewHolder, Branch> {
+
+    private static final int TYPE_HEADER = 0;
+    private static final int TYPE_ITEM = 1;
 
     private final String curBranch;
 
@@ -35,44 +38,63 @@ public class BranchesAdapter extends BaseAdapter<BranchesAdapter.ViewHolder, Bra
     }
 
     @Override
+    public int getItemViewType(int position) {
+        return data.get(position).isHeader() ? TYPE_HEADER : TYPE_ITEM;
+    }
+
+    @Override
     protected int getLayoutId(int viewType) {
-        return R.layout.layout_item_branch;
+        return viewType == TYPE_HEADER ? R.layout.layout_item_branch_header : R.layout.layout_item_branch;
     }
 
     @Override
-    protected ViewHolder getViewHolder(View itemView, int viewType) {
-        return new ViewHolder(itemView);
+    protected BaseViewHolder getViewHolder(View itemView, int viewType) {
+        return viewType == TYPE_HEADER ? new HeaderViewHolder(itemView) : new ItemViewHolder(itemView);
     }
 
     @Override
-    public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
+    public void onBindViewHolder(@NonNull BaseViewHolder holder, int position) {
         super.onBindViewHolder(holder, position);
         Branch branch = data.get(position);
-        holder.icon.setImageResource(branch.isBranch() ? R.drawable.ic_branch : R.drawable.ic_tag);
-        holder.name.setText(branch.getName());
+        if (getItemViewType(position) == TYPE_HEADER) {
+            ((HeaderViewHolder) holder).label.setText(branch.getHeaderLabel());
+            return;
+        }
+        ItemViewHolder itemHolder = (ItemViewHolder) holder;
+        itemHolder.icon.setImageResource(branch.isBranch() ? R.drawable.ic_branch : R.drawable.ic_tag);
+        itemHolder.name.setText(branch.getName());
         Date updatedAt = branch.getUpdatedAt();
         if (updatedAt != null) {
-            holder.updatedAt.setText(String.format(getString(R.string.updated_at_format),
+            itemHolder.updatedAt.setText(String.format(getString(R.string.updated_at_format),
                     StringUtils.getNewsTimeStr(context, updatedAt)));
-            holder.updatedAt.setVisibility(View.VISIBLE);
+            itemHolder.updatedAt.setVisibility(View.VISIBLE);
         } else {
-            holder.updatedAt.setVisibility(View.GONE);
+            itemHolder.updatedAt.setVisibility(View.GONE);
         }
         if(branch.getName().equals(curBranch)){
-            holder.rootLayout.setBackgroundColor(ViewUtils.getSelectedColor(context));
+            itemHolder.rootLayout.setBackgroundColor(ViewUtils.getSelectedColor(context));
         }else{
-            holder.rootLayout.setBackground(null);
+            itemHolder.rootLayout.setBackground(null);
         }
     }
 
-    class ViewHolder extends BaseViewHolder {
+    class ItemViewHolder extends BaseViewHolder {
 
         @BindView(R2.id.root_layout) LinearLayout rootLayout;
         @BindView(R2.id.icon) AppCompatImageView icon;
         @BindView(R2.id.name) TextView name;
         @BindView(R2.id.updated_at) TextView updatedAt;
 
-        public ViewHolder(@NonNull View itemView) {
+        public ItemViewHolder(@NonNull View itemView) {
+            super(itemView);
+        }
+    }
+
+    class HeaderViewHolder extends BaseViewHolder {
+
+        @BindView(R2.id.header_label) TextView label;
+
+        public HeaderViewHolder(@NonNull View itemView) {
             super(itemView);
         }
     }

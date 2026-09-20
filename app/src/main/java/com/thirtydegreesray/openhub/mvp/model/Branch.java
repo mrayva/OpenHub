@@ -28,11 +28,25 @@ public class Branch implements Parcelable {
 
     private boolean isBranch = true;
 
+    // UI-only, never comes from the network: set by RepositoryActivity when
+    // it splits the sorted branches/tags list into Active/Stale/Tags
+    // section-header rows for the branches dialog. A header row carries no
+    // other Branch data and isn't clickable.
+    private boolean isHeader = false;
+    private String headerLabel;
+
     public Branch() {
     }
 
     public Branch(String name) {
         this.name = name;
+    }
+
+    public static Branch newHeader(String label) {
+        Branch header = new Branch();
+        header.isHeader = true;
+        header.headerLabel = label;
+        return header;
     }
 
     public String getName() {
@@ -65,6 +79,14 @@ public class Branch implements Parcelable {
 
     public void setBranch(boolean branch) {
         isBranch = branch;
+    }
+
+    public boolean isHeader() {
+        return isHeader;
+    }
+
+    public String getHeaderLabel() {
+        return headerLabel;
     }
 
     public RepoCommit getCommit() {
