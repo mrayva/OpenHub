@@ -38,6 +38,7 @@ import com.thirtydegreesray.openhub.http.core.HttpSubscriber;
 import com.thirtydegreesray.openhub.http.error.HttpError;
 import com.thirtydegreesray.openhub.http.error.HttpErrorCode;
 import com.thirtydegreesray.openhub.http.error.HttpPageNoFoundError;
+import com.thirtydegreesray.openhub.http.error.RateLimitError;
 import com.thirtydegreesray.openhub.http.error.UnauthorizedError;
 import com.thirtydegreesray.openhub.mvp.contract.base.IBaseContract;
 import com.thirtydegreesray.openhub.util.NetHelper;
@@ -303,7 +304,8 @@ public abstract class BasePresenter<V extends IBaseContract.View> implements IBa
                 } else if(response.getOriResponse().code() == 401){
                     onError(new UnauthorizedError());
                 } else {
-                    onError(new Error(response.getOriResponse().message()));
+                    RateLimitError rateLimitError = detectRateLimit(response.getOriResponse());
+                    onError(rateLimitError != null ? rateLimitError : new Error(response.getOriResponse().message()));
                 }
 
             }
@@ -320,6 +322,51 @@ public abstract class BasePresenter<V extends IBaseContract.View> implements IBa
             return new HttpSubscriber<>(httpObserver);
         else
             return new HttpProgressSubscriber<>(progressDialog, httpObserver);
+    }
+
+    /**
+     * A rate-limited request (primary quota exhausted, or GitHub's secondary
+     * "too many requests too quickly" abuse-detection limit) comes back as a
+     * plain 403 - same status code as a genuine permission error - so the
+     * response body's "message" text is the only reliable signal, confirmed
+     * live: hammering the search endpoint tripped a 403 with
+     * X-RateLimit-Remaining still at 6 of 10 (the secondary limit, which
+     * gives no other warning), body message "You have exceeded a secondary
+     * rate limit. Please wait a few minutes before you try again." A 403 for
+     * any other reason won't mention "rate limit", so this returns null for
+     * those and lets the generic Error path handle them as before.
+     */
+    @Nullable
+    private RateLimitError detectRateLimit(retrofit2.Response<?> response) {
+        if (response.code() != 403) return null;
+        okhttp3.ResponseBody errorBody = response.errorBody();
+        String bodyStr = null;
+        if (errorBody != null) {
+            try {
+                bodyStr = errorBody.string();
+            } catch (java.io.IOException ignored) {
+            }
+        }
+        if (StringUtils.isBlank(bodyStr)) return null;
+        String message = null;
+        try {
+            com.google.gson.JsonObject json = new com.google.gson.Gson().fromJson(bodyStr, com.google.gson.JsonObject.class);
+            if (json != null && json.has("message")) {
+                message = json.get("message").getAsString();
+            }
+        } catch (Exception ignored) {
+        }
+        if (message == null || !message.toLowerCase().contains("rate limit")) return null;
+
+        long retryAfterSeconds = -1;
+        String retryAfterHeader = response.headers().get("Retry-After");
+        if (!StringUtils.isBlank(retryAfterHeader)) {
+            try {
+                retryAfterSeconds = Long.parseLong(retryAfterHeader.trim());
+            } catch (NumberFormatException ignored) {
+            }
+        }
+        return new RateLimitError(message, retryAfterSeconds);
     }
 
     private boolean checkIsUnauthorized(Throwable error){
@@ -361,6 +408,18 @@ public abstract class BasePresenter<V extends IBaseContract.View> implements IBa
             errorTip = getString(R.string.load_timeout_tip);
         } else if (error instanceof HttpError) {
             errorTip = error.getMessage();
+        } else if (error instanceof RateLimitError) {
+            // Must be checked before the generic "instanceof Error" branch
+            // below (RateLimitError extends Error) - otherwise this would
+            // silently blank out, same as every other plain Error, which is
+            // exactly the bug this type exists to fix: a rate-limited
+            // load-more used to hide its spinner and show nothing at all,
+            // leaving no clue why scrolling had stopped working.
+            long retryAfterSeconds = ((RateLimitError) error).getRetryAfterSeconds();
+            errorTip = retryAfterSeconds > 0
+                    ? String.format(getString(R.string.rate_limit_exceeded_with_wait_format),
+                            formatWaitTime(retryAfterSeconds))
+                    : getString(R.string.rate_limit_exceeded);
         } else if (error instanceof Error) {
             // Handle java.lang.Error by returning empty string to avoid showing "Tap to retry"
             errorTip = "";
@@ -370,6 +429,12 @@ public abstract class BasePresenter<V extends IBaseContract.View> implements IBa
         return errorTip;
     }
 
+    private String formatWaitTime(long seconds) {
+        if (seconds < 60) return seconds + "s";
+        long minutes = seconds / 60;
+        long remainingSeconds = seconds % 60;
+        return remainingSeconds == 0 ? minutes + "m" : minutes + "m " + remainingSeconds + "s";
+    }
 
     @NonNull
     protected String getString(@StringRes int resId) {

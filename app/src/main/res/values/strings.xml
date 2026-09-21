@@ -61,6 +61,8 @@
     <string name="no_network_tip">Loading data from GitHub failed. Please check your network connection and retry.</string>
     <string name="load_timeout_tip">Loading data from GitHub timed out. Please check your network connection and retry.</string>
     <string name="tap_to_retry">Tap to retry</string>
+    <string name="rate_limit_exceeded">GitHub is temporarily rate-limiting requests. Please wait a few minutes and try again.</string>
+    <string name="rate_limit_exceeded_with_wait_format">GitHub is rate-limiting requests. Try again in %s.</string>
     <string name="no_data">No data</string>
 
     <string name="title_activity_repository">OpenHub</string>

@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 
@@ -351,6 +352,15 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
     // the chain again one page at a time, same as any other load-more.
     private static final int MAX_AUTO_CONTINUE_PAGES = 15;
 
+    // GitHub's search endpoint has a much tighter primary quota (10/min
+    // unauthenticated, 30/min authenticated) than most REST endpoints, plus
+    // a separate secondary "too many requests too quickly" abuse-detection
+    // limit that a fast back-to-back auto-continue chain can trip well
+    // before the primary quota runs out - confirmed live. Pacing each hop
+    // keeps a full 15-hop chain to ~1 request/second (under 60/min even
+    // alone), safely under both limits for a real logged-in user.
+    private static final long AUTO_CONTINUE_DELAY_MS = 1000;
+
     private void searchRepos(final int page) {
         // The only caller that ever passes page==1 is a fresh reload
         // (loadData()); load-more (loadRepositories()) always passes the
@@ -496,8 +506,23 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                                 // an unfiltered load would normally show) or
                                 // GitHub's own pagination (a short/empty raw
                                 // page) says there's truly nothing left.
-                                searchRepos(page + 1, autoContinueDepth + 1, isFreshReload,
-                                        requestQuery, requestSort, requestOrder);
+                                //
+                                // Paced with a short delay rather than firing
+                                // immediately: a 15-hop chain with no pacing
+                                // can trip GitHub's secondary ("too many
+                                // requests too quickly") rate limit well
+                                // before the stated per-minute quota is
+                                // exhausted - confirmed live, a burst of just
+                                // 3 rapid search requests triggered a 403
+                                // with 6 of 10 primary requests still unused.
+                                Observable.timer(AUTO_CONTINUE_DELAY_MS, TimeUnit.MILLISECONDS)
+                                        .observeOn(AndroidSchedulers.mainThread())
+                                        .subscribe(tick -> {
+                                            if (mView != null) {
+                                                searchRepos(page + 1, autoContinueDepth + 1, isFreshReload,
+                                                        requestQuery, requestSort, requestOrder);
+                                            }
+                                        });
                                 return;
                             }
                             mView.hideLoading();
