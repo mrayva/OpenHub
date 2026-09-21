@@ -222,6 +222,10 @@ public abstract class ListFragment <P extends IBaseContract.Presenter, A extends
         return curPage;
     }
 
+    public void setCurPage(int page) {
+        curPage = page;
+    }
+
     @Override
     public void showLoading() {
         android.util.Log.d("SEARCH_DEBUG", "showLoading() this=" + System.identityHashCode(this));

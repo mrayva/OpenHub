@@ -541,6 +541,18 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                             }
                             android.util.Log.d("SEARCH_DEBUG", "SETTLED(ignoreListEligible) page=" + page
                                     + " depth=" + autoContinueDepth + " repos.size=" + repos.size());
+                            // The chain may have silently consumed many more
+                            // raw pages than the fragment's own curPage knew
+                            // about (it only advances via the fragment's own
+                            // ++curPage on a scroll-triggered load-more, never
+                            // during this internal auto-continue recursion) -
+                            // sync it to wherever this chain actually settled,
+                            // so the next scroll-triggered load-more requests
+                            // the real next page instead of re-requesting one
+                            // already consumed here, which - thanks to
+                            // dedup - would silently append nothing and look
+                            // exactly like scrolling stopped working.
+                            mView.setCurPage(page);
                             mView.hideLoading();
                             mView.showRepositories(repos, appendedCount);
                         } else if (rawCount == 0 && repos.size() != 0) {
