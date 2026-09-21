@@ -418,19 +418,27 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
      */
     private void searchRepos(final int page, final int autoContinueDepth, final boolean isFreshReload,
                               final String requestQuery, final String requestSort, final String requestOrder) {
+        android.util.Log.d("SEARCH_DEBUG", "ENTRY searchRepos page=" + page + " depth=" + autoContinueDepth
+                + " presenter=" + System.identityHashCode(this) + " mView=" + System.identityHashCode(mView));
         mView.showLoading();
 
         HttpObserver<SearchResult<Repository>> httpObserver =
                 new HttpObserver<SearchResult<Repository>>() {
                     private boolean isStale() {
-                        return searchModel == null
+                        boolean stale = searchModel == null
                                 || !java.util.Objects.equals(searchModel.getQuery(), requestQuery)
                                 || !java.util.Objects.equals(searchModel.getSort(), requestSort)
                                 || !java.util.Objects.equals(searchModel.getOrder(), requestOrder);
+                        android.util.Log.d("SEARCH_DEBUG", "isStale=" + stale + " page=" + page
+                                + " depth=" + autoContinueDepth + " liveQuery=[" + (searchModel == null ? "null" : searchModel.getQuery())
+                                + "] requestQuery=[" + requestQuery + "]");
+                        return stale;
                     }
 
                     @Override
                     public void onError(@NonNull Throwable error) {
+                        android.util.Log.d("SEARCH_DEBUG", "onError page=" + page + " depth=" + autoContinueDepth
+                                + " error=" + error.getClass().getSimpleName() + ":" + error.getMessage());
                         if (isStale()) return;
                         mView.hideLoading();
                         handleError(error);
@@ -515,22 +523,32 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                                 // exhausted - confirmed live, a burst of just
                                 // 3 rapid search requests triggered a 403
                                 // with 6 of 10 primary requests still unused.
+                                android.util.Log.d("SEARCH_DEBUG", "SCHEDULING next hop page=" + (page + 1)
+                                        + " depth=" + (autoContinueDepth + 1) + " mView=" + System.identityHashCode(mView));
                                 Observable.timer(AUTO_CONTINUE_DELAY_MS, TimeUnit.MILLISECONDS)
                                         .observeOn(AndroidSchedulers.mainThread())
                                         .subscribe(tick -> {
+                                            android.util.Log.d("SEARCH_DEBUG", "TIMER FIRED for page=" + (page + 1)
+                                                    + " mView now=" + System.identityHashCode(mView));
                                             if (mView != null) {
                                                 searchRepos(page + 1, autoContinueDepth + 1, isFreshReload,
                                                         requestQuery, requestSort, requestOrder);
+                                            } else {
+                                                android.util.Log.d("SEARCH_DEBUG", "TIMER ABORTED - mView is null, chain dead, isLoading never reset");
                                             }
                                         });
                                 return;
                             }
+                            android.util.Log.d("SEARCH_DEBUG", "SETTLED(ignoreListEligible) page=" + page
+                                    + " depth=" + autoContinueDepth + " repos.size=" + repos.size());
                             mView.hideLoading();
                             mView.showRepositories(repos, appendedCount);
                         } else if (rawCount == 0 && repos.size() != 0) {
+                            android.util.Log.d("SEARCH_DEBUG", "SETTLED(rawCount==0) page=" + page);
                             mView.hideLoading();
                             mView.setCanLoadMore(false);
                         } else {
+                            android.util.Log.d("SEARCH_DEBUG", "SETTLED(else) page=" + page);
                             mView.hideLoading();
                             mView.showRepositories(repos, appendedCount);
                         }

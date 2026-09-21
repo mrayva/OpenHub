@@ -72,6 +72,8 @@ public abstract class BaseFragment<P extends IBaseContract.Presenter>
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater, @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
+        android.util.Log.d("SEARCH_DEBUG", "onCreateView() this=" + System.identityHashCode(this)
+                + " class=" + getClass().getSimpleName() + " presenter=" + System.identityHashCode(mPresenter));
         //some page contain WebView will make default language changed
         AppUtils.updateAppLanguage(getActivity());
         View fragmentView = inflater.inflate(getLayoutId(), container, false);
@@ -122,6 +124,8 @@ public abstract class BaseFragment<P extends IBaseContract.Presenter>
     @Override
     public void onDestroyView() {
         super.onDestroyView();
+        android.util.Log.d("SEARCH_DEBUG", "onDestroyView() this=" + System.identityHashCode(this)
+                + " class=" + getClass().getSimpleName());
         unbinder.unbind();
         if (mPresenter != null) mPresenter.detachView();
     }

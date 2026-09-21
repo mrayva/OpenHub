@@ -99,15 +99,26 @@ public abstract class ListFragment <P extends IBaseContract.Presenter, A extends
         @Override
         public void onScrolled(RecyclerView recyclerView, int dx, int dy) {
             super.onScrolled(recyclerView, dx, dy);
-            if(!loadMoreEnable || !canLoadMore || isLoading ||
-                    !NetHelper.INSTANCE.getNetEnabled()) return;
             RecyclerView.LayoutManager layoutManager = recyclerView.getLayoutManager();
             //only LinearLayoutManager can find last visible
             if(layoutManager instanceof LinearLayoutManager){
                 LinearLayoutManager linearManager = (LinearLayoutManager) layoutManager;
                 int lastPosition = linearManager.findLastVisibleItemPosition();
-                if(lastPosition == adapter.getItemCount() - 1){
-                    onLoadMore(++curPage);
+                boolean atBottom = lastPosition == adapter.getItemCount() - 1;
+                if (atBottom) {
+                    // Only logged once actually scrolled to the bottom edge
+                    // (not on every scroll tick) - if this ever prints
+                    // "BLOCKED" with isLoading=true and no matching
+                    // hideLoading() nearby in logcat, that's a stuck
+                    // in-flight request silently eating every further
+                    // scroll-triggered load-more attempt.
+                    if(!loadMoreEnable || !canLoadMore || isLoading || !NetHelper.INSTANCE.getNetEnabled()){
+                        android.util.Log.d("SEARCH_DEBUG", "load-more BLOCKED at bottom: loadMoreEnable="
+                                + loadMoreEnable + " canLoadMore=" + canLoadMore + " isLoading=" + isLoading
+                                + " netEnabled=" + NetHelper.INSTANCE.getNetEnabled());
+                    } else {
+                        onLoadMore(++curPage);
+                    }
                 }
             }
         }
@@ -213,12 +224,14 @@ public abstract class ListFragment <P extends IBaseContract.Presenter, A extends
 
     @Override
     public void showLoading() {
+        android.util.Log.d("SEARCH_DEBUG", "showLoading() this=" + System.identityHashCode(this));
         isLoading = true;
         refreshLayout.setRefreshing(true);
     }
 
     @Override
     public void hideLoading() {
+        android.util.Log.d("SEARCH_DEBUG", "hideLoading() this=" + System.identityHashCode(this));
         isLoading = false;
         refreshLayout.setRefreshing(false);
     }
