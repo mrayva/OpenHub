@@ -124,7 +124,7 @@ public class NotificationsFragment extends ListFragment<NotificationsPresenter, 
             }
 
             if(notification.isUnread()){
-                mPresenter.markNotificationAsRead(notification.getId());
+                mPresenter.markNotificationAsRead(notification);
                 notification.setUnread(false);
                 adapter.notifyItemChanged(position);
                 getActivity().invalidateOptionsMenu();

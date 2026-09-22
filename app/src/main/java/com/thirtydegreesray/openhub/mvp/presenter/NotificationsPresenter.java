@@ -16,14 +16,13 @@ import com.thirtydegreesray.openhub.mvp.model.request.MarkNotificationReadReques
 import com.thirtydegreesray.openhub.mvp.presenter.base.BasePagerPresenter;
 import com.thirtydegreesray.openhub.ui.adapter.base.DoubleTypesModel;
 import com.thirtydegreesray.openhub.ui.fragment.NotificationsFragment;
+import com.thirtydegreesray.openhub.util.LocallyReadNotificationsHelper;
 import com.thirtydegreesray.openhub.util.StringUtils;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.Set;
 
 import javax.inject.Inject;
 
@@ -41,15 +40,6 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
     @AutoAccess NotificationsFragment.NotificationsType type;
     private ArrayList<Notification> notifications;
     private ArrayList<DoubleTypesModel<Repository, Notification>> sortedNotifications;
-    // Marking read is a fire-and-forget PATCH (generalRxHttpExecute(..., null)
-    // below - no completion callback), and readCacheFirst's cache-then-network
-    // double fetch on the very first load can deliver a second, fresher
-    // onSuccess() for the same page after the user has already acted on the
-    // cached one. Without this, that second response's full list replace
-    // (page == 1 branch below) silently reverted every mark-as-read made in
-    // between back to unread - remembering the ids here and reapplying them
-    // onto any freshly fetched batch closes that window.
-    private final Set<String> locallyReadIds = new HashSet<>();
 
     @Inject
     public NotificationsPresenter(DaoSession daoSession) {
@@ -92,9 +82,7 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
                 mView.hideLoading();
                 int rawCount = response.body().size();
                 for (Notification notification : response.body()) {
-                    if (locallyReadIds.contains(notification.getId())) {
-                        notification.setUnread(false);
-                    }
+                    LocallyReadNotificationsHelper.applyOverride(notification);
                 }
                 if (notifications == null || page == 1) {
                     notifications = response.body();
@@ -138,9 +126,33 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
     }
 
     @Override
-    public void markNotificationAsRead(String threadId) {
-        generalRxHttpExecute(getNotificationsService().markNotificationAsRead(threadId), null);
-        locallyReadIds.add(threadId);
+    public void markNotificationAsRead(@NonNull final Notification notification) {
+        // Same optimistic-then-revert-on-error shape as markAllNotificationsAsRead()/
+        // markRepoNotificationsAsRead() below - this was the one remaining
+        // fire-and-forget path (generalRxHttpExecute(..., null), no
+        // completion callback, no override tracking at all), and it's the
+        // most commonly hit one, since tapping a notification to open its
+        // issue/PR is the normal way to read one - confirmed live this is
+        // the repro for notifications reverting to unread after leaving and
+        // returning to this screen (NotificationsActivity has no launchMode
+        // override, so navigating away and back via MainActivity's drawer,
+        // as opposed to the system Back button, creates a fresh instance).
+        final String threadId = notification.getId();
+        LocallyReadNotificationsHelper.markRead(notification);
+        generalRxHttpExecute(getNotificationsService().markNotificationAsRead(threadId),
+                new HttpSubscriber<>(new HttpObserver<ResponseBody>() {
+                    @Override
+                    public void onError(Throwable error) {
+                        LocallyReadNotificationsHelper.undoMarkRead(threadId);
+                        notification.setUnread(true);
+                        mView.showErrorToast(getErrorTip(error));
+                        if (sortedNotifications != null) mView.showNotifications(sortedNotifications);
+                    }
+
+                    @Override
+                    public void onSuccess(HttpResponse<ResponseBody> response) {
+                    }
+                }));
     }
 
     @Override
@@ -155,7 +167,7 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
         for(DoubleTypesModel<Repository, Notification> model : sortedNotifications){
             if(model.getM2() != null && model.getM2().isUnread()){
                 model.getM2().setUnread(false);
-                locallyReadIds.add(model.getM2().getId());
+                LocallyReadNotificationsHelper.markRead(model.getM2());
                 markedByThisCall.add(model.getM2());
             }
         }
@@ -168,7 +180,7 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
                     public void onError(Throwable error) {
                         for (Notification notification : markedByThisCall) {
                             notification.setUnread(true);
-                            locallyReadIds.remove(notification.getId());
+                            LocallyReadNotificationsHelper.undoMarkRead(notification.getId());
                         }
                         mView.showErrorToast(getErrorTip(error));
                         mView.showNotifications(sortedNotifications);
@@ -204,7 +216,7 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
             } else if(model.getM2() != null && model.getM2().getRepository().getId() == repository.getId()
                     && model.getM2().isUnread()){
                 model.getM2().setUnread(false);
-                locallyReadIds.add(model.getM2().getId());
+                LocallyReadNotificationsHelper.markRead(model.getM2());
                 markedByThisCall.add(model.getM2());
             }
         }
@@ -218,7 +230,7 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
                     public void onError(Throwable error) {
                         for (Notification notification : markedByThisCall) {
                             notification.setUnread(true);
-                            locallyReadIds.remove(notification.getId());
+                            LocallyReadNotificationsHelper.undoMarkRead(notification.getId());
                         }
                         for(DoubleTypesModel<Repository, Notification> model : sortedNotifications){
                             if(model.getM1() != null && model.getM1().getId() == repository.getId()){

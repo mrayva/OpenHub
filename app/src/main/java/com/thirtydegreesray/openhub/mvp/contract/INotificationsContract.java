@@ -25,7 +25,7 @@ public interface INotificationsContract {
 
     interface Presenter extends IBasePagerContract.Presenter<INotificationsContract.View> {
         void loadNotifications(int page, boolean isReload);
-        void markNotificationAsRead(String threadId);
+        void markNotificationAsRead(@NonNull Notification notification);
         void markAllNotificationsAsRead();
         boolean isNotificationsAllRead();
         void markRepoNotificationsAsRead(@NonNull Repository repository);
