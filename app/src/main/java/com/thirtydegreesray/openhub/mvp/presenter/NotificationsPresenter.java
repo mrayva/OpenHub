@@ -53,6 +53,8 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
 
     @Override
     public void loadNotifications(final int page, boolean isReload) {
+        android.util.Log.d("NOTIF_DEBUG", "loadNotifications page=" + page + " isReload=" + isReload
+                + " type=" + type);
         mView.showLoading();
         // Deliberately never cache-first here, unlike every other page==1
         // load in this app: cacheFirstEnable defaults on with a 4-week
@@ -82,7 +84,17 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
                 mView.hideLoading();
                 int rawCount = response.body().size();
                 for (Notification notification : response.body()) {
+                    boolean serverUnread = notification.isUnread();
                     LocallyReadNotificationsHelper.applyOverride(notification);
+                    if (serverUnread != notification.isUnread()) {
+                        android.util.Log.d("NOTIF_DEBUG", "OVERRIDE APPLIED id=" + notification.getId()
+                                + " repo=" + notification.getRepository().getFullName()
+                                + " serverSaidUnread=" + serverUnread + " updatedAt=" + notification.getUpdateAt());
+                    } else if (serverUnread) {
+                        android.util.Log.d("NOTIF_DEBUG", "server still unread, no override id=" + notification.getId()
+                                + " repo=" + notification.getRepository().getFullName()
+                                + " updatedAt=" + notification.getUpdateAt());
+                    }
                 }
                 if (notifications == null || page == 1) {
                     notifications = response.body();
@@ -138,11 +150,15 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
         // override, so navigating away and back via MainActivity's drawer,
         // as opposed to the system Back button, creates a fresh instance).
         final String threadId = notification.getId();
+        android.util.Log.d("NOTIF_DEBUG", "markNotificationAsRead PUT id=" + threadId
+                + " repo=" + notification.getRepository().getFullName() + " updatedAt=" + notification.getUpdateAt());
         LocallyReadNotificationsHelper.markRead(notification);
         generalRxHttpExecute(getNotificationsService().markNotificationAsRead(threadId),
                 new HttpSubscriber<>(new HttpObserver<ResponseBody>() {
                     @Override
                     public void onError(Throwable error) {
+                        android.util.Log.d("NOTIF_DEBUG", "markNotificationAsRead FAILED id=" + threadId
+                                + " error=" + error.getClass().getSimpleName() + ":" + error.getMessage());
                         LocallyReadNotificationsHelper.undoMarkRead(threadId);
                         notification.setUnread(true);
                         mView.showErrorToast(getErrorTip(error));
@@ -151,6 +167,8 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
 
                     @Override
                     public void onSuccess(HttpResponse<ResponseBody> response) {
+                        android.util.Log.d("NOTIF_DEBUG", "markNotificationAsRead OK id=" + threadId
+                                + " httpCode=" + response.getOriResponse().code());
                     }
                 }));
     }
@@ -173,11 +191,14 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
         }
         mView.showNotifications(sortedNotifications);
 
+        android.util.Log.d("NOTIF_DEBUG", "markAllNotificationsAsRead PATCH, marking " + markedByThisCall.size() + " ids");
         generalRxHttpExecute(getNotificationsService().markAllNotificationsAsRead(
                 MarkNotificationReadRequestModel.newInstance()), new HttpSubscriber<>(
                 new HttpObserver<ResponseBody>() {
                     @Override
                     public void onError(Throwable error) {
+                        android.util.Log.d("NOTIF_DEBUG", "markAllNotificationsAsRead FAILED error="
+                                + error.getClass().getSimpleName() + ":" + error.getMessage());
                         for (Notification notification : markedByThisCall) {
                             notification.setUnread(true);
                             LocallyReadNotificationsHelper.undoMarkRead(notification.getId());
@@ -188,6 +209,8 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
 
                     @Override
                     public void onSuccess(HttpResponse<ResponseBody> response) {
+                        android.util.Log.d("NOTIF_DEBUG", "markAllNotificationsAsRead OK httpCode="
+                                + response.getOriResponse().code());
                     }
                 }));
     }
@@ -222,12 +245,17 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
         }
         mView.showNotifications(sortedNotifications);
 
+        android.util.Log.d("NOTIF_DEBUG", "markRepoNotificationsAsRead PUT repo=" + repository.getFullName()
+                + ", marking " + markedByThisCall.size() + " ids");
         generalRxHttpExecute(getNotificationsService().markRepoNotificationsAsRead(
                 MarkNotificationReadRequestModel.newInstance(),
                 repository.getOwner().getLogin(), repository.getName()), new HttpSubscriber<>(
                 new HttpObserver<ResponseBody>() {
                     @Override
                     public void onError(Throwable error) {
+                        android.util.Log.d("NOTIF_DEBUG", "markRepoNotificationsAsRead FAILED repo="
+                                + repository.getFullName() + " error=" + error.getClass().getSimpleName()
+                                + ":" + error.getMessage());
                         for (Notification notification : markedByThisCall) {
                             notification.setUnread(true);
                             LocallyReadNotificationsHelper.undoMarkRead(notification.getId());
@@ -243,12 +271,16 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
 
                     @Override
                     public void onSuccess(HttpResponse<ResponseBody> response) {
+                        android.util.Log.d("NOTIF_DEBUG", "markRepoNotificationsAsRead OK repo="
+                                + repository.getFullName() + " httpCode=" + response.getOriResponse().code());
                     }
                 }));
     }
 
     @Override
     public void removeRepoNotifications(@NonNull Repository repository) {
+        android.util.Log.d("NOTIF_DEBUG", "removeRepoNotifications (client-side only, no server call) repo="
+                + repository.getFullName());
         Iterator<DoubleTypesModel<Repository, Notification>> iterator = sortedNotifications.iterator();
         while(iterator.hasNext()){
             DoubleTypesModel<Repository, Notification> model = iterator.next();
