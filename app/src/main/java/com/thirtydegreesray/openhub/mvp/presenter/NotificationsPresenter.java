@@ -279,8 +279,29 @@ public class NotificationsPresenter extends BasePagerPresenter<INotificationsCon
 
     @Override
     public void removeRepoNotifications(@NonNull Repository repository) {
-        android.util.Log.d("NOTIF_DEBUG", "removeRepoNotifications (client-side only, no server call) repo="
-                + repository.getFullName());
+        // Must also strip these out of `notifications` (the accumulated
+        // source list every page fetched so far gets appended to), not just
+        // the derived `sortedNotifications` shown on screen - every
+        // subsequent load (a pull-to-refresh, but just as much an ordinary
+        // scroll-triggered load-more, which runs this same rebuild) calls
+        // sortNotifications(notifications) to rebuild sortedNotifications
+        // from scratch. Removing only from sortedNotifications left this
+        // repo's notifications sitting untouched in `notifications`, so the
+        // very next such rebuild resurrected the whole group right back into
+        // view - now correctly showing the double-check icon (since the
+        // underlying notifications really were marked read), which is
+        // exactly the "dismissed repos reappear already checked off"
+        // report: confirmed live via logcat that this fires on a plain
+        // scroll load-more, no pull-to-refresh or navigation needed at all.
+        if (notifications != null) {
+            Iterator<Notification> notificationIterator = notifications.iterator();
+            while (notificationIterator.hasNext()) {
+                Notification notification = notificationIterator.next();
+                if (notification.getRepository().getId() == repository.getId()) {
+                    notificationIterator.remove();
+                }
+            }
+        }
         Iterator<DoubleTypesModel<Repository, Notification>> iterator = sortedNotifications.iterator();
         while(iterator.hasNext()){
             DoubleTypesModel<Repository, Notification> model = iterator.next();
