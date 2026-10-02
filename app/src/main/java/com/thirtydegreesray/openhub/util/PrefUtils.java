@@ -55,6 +55,7 @@ public class PrefUtils {
     public final static String CODE_WRAP = "codeWrap";
     public final static String CUSTOM_TABS_ENABLE = "customTabsEnable";
     public final static String IGNORE_LIST_APPLIED = "ignoreListApplied";
+    public final static String IGNORE_LIST_QUICK_EXPORT_URI = "ignoreListQuickExportUri";
     public final static String FONT_SCALE = "fontScale";
     public final static String CRASH_LOGGING_ENABLE = "crashLoggingEnable";
     public final static String LAST_SHOWN_CRASH_TIME = "lastShownCrashTime";

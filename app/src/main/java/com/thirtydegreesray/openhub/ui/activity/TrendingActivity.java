@@ -24,6 +24,7 @@ import com.thirtydegreesray.openhub.mvp.presenter.TrendingPresenter;
 import com.thirtydegreesray.openhub.ui.activity.base.PagerActivity;
 import com.thirtydegreesray.openhub.ui.adapter.base.FragmentPagerModel;
 import com.thirtydegreesray.openhub.ui.fragment.RepositoriesFragment;
+import com.thirtydegreesray.openhub.util.IgnoreListExportHelper;
 import com.thirtydegreesray.openhub.util.PrefUtils;
 
 import java.util.ArrayList;
@@ -164,6 +165,9 @@ public class TrendingActivity extends PagerActivity<TrendingPresenter>
         } else if (item.getItemId() == R.id.action_manage_ignore_list) {
             IgnoredReposActivity.show(getActivity());
             return true;
+        } else if (item.getItemId() == R.id.action_quick_export_ignore_list) {
+            IgnoreListExportHelper.quickExport(getActivity());
+            return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -214,6 +218,9 @@ public class TrendingActivity extends PagerActivity<TrendingPresenter>
         super.onActivityResult(requestCode, resultCode, data);
         if(resultCode == RESULT_OK && requestCode == SORT_LANGUAGE_REQUEST_CODE){
             updateLanguagesDrawer();
+        } else if (resultCode == RESULT_OK && requestCode == IgnoreListExportHelper.REQUEST_CODE
+                && data != null && data.getData() != null) {
+            IgnoreListExportHelper.onExportLocationChosen(getActivity(), data.getData());
         }
     }
 
