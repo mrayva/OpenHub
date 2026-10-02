@@ -55,6 +55,7 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
     private SearchModel dailySearchModel;
     private SearchModel weeklySearchModel;
     private SearchModel monthlySearchModel;
+    private SearchModel threeMonthsSearchModel;
     private SearchModel yearlySearchModel;
     private SearchModel tenYearsSearchModel;
     private SearchModel maxSearchModel;
@@ -66,6 +67,7 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
         dailySearchModel = newSearchModel(TrendingSince.Daily);
         weeklySearchModel = newSearchModel(TrendingSince.Weekly);
         monthlySearchModel = newSearchModel(TrendingSince.Monthly);
+        threeMonthsSearchModel = newSearchModel(TrendingSince.ThreeMonths);
         yearlySearchModel = newSearchModel(TrendingSince.Yearly);
         tenYearsSearchModel = newSearchModel(TrendingSince.TenYears);
         maxSearchModel = newSearchModel(TrendingSince.Max);
@@ -92,6 +94,9 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
                 break;
             case Monthly:
                 calendar.add(Calendar.MONTH, -1);
+                break;
+            case ThreeMonths:
+                calendar.add(Calendar.MONTH, -3);
                 break;
             case TenYears:
                 calendar.add(Calendar.YEAR, -10);
@@ -129,6 +134,8 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
                 return weeklySearchModel;
             case Monthly:
                 return monthlySearchModel;
+            case ThreeMonths:
+                return threeMonthsSearchModel;
             case TenYears:
                 return tenYearsSearchModel;
             case Max:
@@ -168,7 +175,7 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
         setToolbarBackEnable();
         pagerAdapter.setPagerList(FragmentPagerModel.createCreatedPagerList(
                 getActivity(), getFragments(), dailySearchModel, weeklySearchModel,
-                monthlySearchModel, yearlySearchModel, tenYearsSearchModel, maxSearchModel));
+                monthlySearchModel, threeMonthsSearchModel, yearlySearchModel, tenYearsSearchModel, maxSearchModel));
         tabLayout.setVisibility(View.VISIBLE);
         tabLayout.setupWithViewPager(viewPager);
         viewPager.setAdapter(pagerAdapter);
@@ -183,7 +190,7 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
 
     @Override
     public int getPagerSize() {
-        return 6;
+        return 7;
     }
 
     @Override
@@ -202,12 +209,14 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
                 return 1;
             } else if (since.equals(TrendingSince.Monthly)) {
                 return 2;
-            } else if (since.equals(TrendingSince.Yearly)) {
+            } else if (since.equals(TrendingSince.ThreeMonths)) {
                 return 3;
-            } else if (since.equals(TrendingSince.TenYears)) {
+            } else if (since.equals(TrendingSince.Yearly)) {
                 return 4;
-            } else if (since.equals(TrendingSince.Max)) {
+            } else if (since.equals(TrendingSince.TenYears)) {
                 return 5;
+            } else if (since.equals(TrendingSince.Max)) {
+                return 6;
             } else {
                 return -1;
             }

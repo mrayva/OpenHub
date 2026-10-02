@@ -9,5 +9,5 @@ public enum TrendingSince {
     // Not used by real (scraped) trending - GitHub's trending page has no
     // timeframes beyond daily/weekly/monthly - only by CreatedActivity's
     // search-API-based "created in last N" tabs.
-    Yearly, TenYears, Max
+    ThreeMonths, Yearly, TenYears, Max
 }

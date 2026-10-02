@@ -131,7 +131,8 @@ public class FragmentPagerModel {
     public static List<FragmentPagerModel> createCreatedPagerList(
             @NonNull Context context, @NonNull ArrayList<Fragment> fragments,
             @NonNull SearchModel dailySearchModel, @NonNull SearchModel weeklySearchModel,
-            @NonNull SearchModel monthlySearchModel, @NonNull SearchModel yearlySearchModel,
+            @NonNull SearchModel monthlySearchModel, @NonNull SearchModel threeMonthsSearchModel,
+            @NonNull SearchModel yearlySearchModel,
             @NonNull SearchModel tenYearsSearchModel, @NonNull SearchModel maxSearchModel) {
         return setPagerFragmentFlag(Arrays.asList(
                 new FragmentPagerModel(context.getString(R.string.daily),
@@ -140,12 +141,14 @@ public class FragmentPagerModel {
                         getFragment(fragments, 1, () -> RepositoriesFragment.createForSearch(weeklySearchModel, TrendingSince.Weekly))),
                 new FragmentPagerModel(context.getString(R.string.monthly),
                         getFragment(fragments, 2, () -> RepositoriesFragment.createForSearch(monthlySearchModel, TrendingSince.Monthly))),
+                new FragmentPagerModel(context.getString(R.string.three_months),
+                        getFragment(fragments, 3, () -> RepositoriesFragment.createForSearch(threeMonthsSearchModel, TrendingSince.ThreeMonths))),
                 new FragmentPagerModel(context.getString(R.string.yearly),
-                        getFragment(fragments, 3, () -> RepositoriesFragment.createForSearch(yearlySearchModel, TrendingSince.Yearly))),
+                        getFragment(fragments, 4, () -> RepositoriesFragment.createForSearch(yearlySearchModel, TrendingSince.Yearly))),
                 new FragmentPagerModel(context.getString(R.string.ten_years),
-                        getFragment(fragments, 4, () -> RepositoriesFragment.createForSearch(tenYearsSearchModel, TrendingSince.TenYears))),
+                        getFragment(fragments, 5, () -> RepositoriesFragment.createForSearch(tenYearsSearchModel, TrendingSince.TenYears))),
                 new FragmentPagerModel(context.getString(R.string.all_time),
-                        getFragment(fragments, 5, () -> RepositoriesFragment.createForSearch(maxSearchModel, TrendingSince.Max)))
+                        getFragment(fragments, 6, () -> RepositoriesFragment.createForSearch(maxSearchModel, TrendingSince.Max)))
         ));
     }
 
