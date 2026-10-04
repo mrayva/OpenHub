@@ -71,18 +71,38 @@
 
         </com.google.android.material.appbar.CollapsingToolbarLayout>
 
-        <TextView
-            android:id="@+id/desc"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginStart="@dimen/spacing_normal"
+            android:orientation="horizontal"
             android:layout_marginTop="@dimen/spacing_x_large"
-            android:ellipsize="end"
-            android:maxLines="4"
-            android:textColor="?title_color"
-            android:textSize="@dimen/text_small"
             android:layout_marginBottom="20dp"
-            app:layout_scrollFlags="scroll"/>
+            app:layout_scrollFlags="scroll">
+
+            <TextView
+                android:id="@+id/desc"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:layout_marginStart="@dimen/spacing_normal"
+                android:ellipsize="end"
+                android:maxLines="4"
+                android:textColor="?title_color"
+                android:textSize="@dimen/text_small"/>
+
+            <com.thirtydegreesray.openhub.ui.widget.ToastAbleImageButton
+                android:id="@+id/translate_desc_bn"
+                android:layout_width="28dp"
+                android:layout_height="28dp"
+                android:layout_marginEnd="@dimen/spacing_normal"
+                android:visibility="gone"
+                android:scaleType="center"
+                app:srcCompat="@drawable/ic_language"
+                android:tint="?title_color"
+                app:toast_text="@string/translate_description"
+                android:background="?android:selectableItemBackgroundBorderless"/>
+
+        </LinearLayout>
 
         <TextView
             android:id="@+id/info"

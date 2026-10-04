@@ -65,7 +65,8 @@ public class ReadmeTranslationHelper {
     }
 
     public interface TranslateCallback {
-        void onTranslated(@NonNull String translatedHtml);
+        /** translate() hands back translated HTML; translatePlainText() hands back a plain translated string. */
+        void onTranslated(@NonNull String translated);
 
         void onError(@NonNull String message);
     }
@@ -113,6 +114,35 @@ public class ReadmeTranslationHelper {
      */
     public static void translate(@NonNull String htmlSource, @NonNull String sourceLanguageCode,
                                   @NonNull TranslateCallback callback) {
+        getReadyTranslator(sourceLanguageCode, callback,
+                translator -> translateHtml(translator, htmlSource, callback));
+    }
+
+    /**
+     * For short plain-text fields (e.g. a repo's one-line description) -
+     * no Jsoup/DOM walk needed, just the model download + a single
+     * translate() call.
+     */
+    public static void translatePlainText(@NonNull String text, @NonNull String sourceLanguageCode,
+                                           @NonNull TranslateCallback callback) {
+        getReadyTranslator(sourceLanguageCode, callback, translator ->
+                translator.translate(text)
+                        .addOnSuccessListener(translated -> {
+                            translator.close();
+                            callback.onTranslated(translated);
+                        })
+                        .addOnFailureListener(e -> {
+                            translator.close();
+                            callback.onError(AppApplication.get().getString(R.string.translate_failed));
+                        }));
+    }
+
+    private interface ReadyTranslatorCallback {
+        void onReady(Translator translator);
+    }
+
+    private static void getReadyTranslator(@NonNull String sourceLanguageCode, @NonNull TranslateCallback callback,
+                                            @NonNull ReadyTranslatorCallback onReady) {
         String targetLanguageCode = TranslateLanguage.fromLanguageTag(Locale.getDefault().getLanguage());
         if (targetLanguageCode == null) {
             callback.onError(AppApplication.get().getString(R.string.translate_not_available));
@@ -131,7 +161,7 @@ public class ReadmeTranslationHelper {
         // silently stall mobile-only users on every repo they open.
         DownloadConditions conditions = new DownloadConditions.Builder().build();
         translator.downloadModelIfNeeded(conditions)
-                .addOnSuccessListener(unused -> translateHtml(translator, htmlSource, callback))
+                .addOnSuccessListener(unused -> onReady.onReady(translator))
                 .addOnFailureListener(e -> {
                     translator.close();
                     callback.onError(AppApplication.get().getString(R.string.translate_failed));

@@ -44,10 +44,12 @@ import com.thirtydegreesray.openhub.ui.fragment.ReleasesFragment;
 import com.thirtydegreesray.openhub.ui.fragment.RepoFilesFragment;
 import com.thirtydegreesray.openhub.ui.fragment.RepoInfoFragment;
 import com.thirtydegreesray.openhub.ui.fragment.RepoTopicsFragment;
+import com.thirtydegreesray.openhub.ui.widget.ToastAbleImageButton;
 import com.thirtydegreesray.openhub.util.AppOpener;
 import com.thirtydegreesray.openhub.util.AppUtils;
 import com.thirtydegreesray.openhub.util.BundleHelper;
 import com.thirtydegreesray.openhub.util.PrefUtils;
+import com.thirtydegreesray.openhub.util.ReadmeTranslationHelper;
 import com.thirtydegreesray.openhub.util.StarWishesHelper;
 import com.thirtydegreesray.openhub.util.StringUtils;
 
@@ -89,6 +91,12 @@ public class RepositoryActivity extends PagerActivity<RepositoryPresenter>
     @BindView(R2.id.loader) ProgressBar loader;
     @BindView(R2.id.desc) TextView desc;
     @BindView(R2.id.info) TextView info;
+    @BindView(R2.id.translate_desc_bn) ToastAbleImageButton translateDescBn;
+
+    private String originalDescription;
+    private String translatedDescription;
+    private String detectedDescriptionLanguage;
+    private boolean showingTranslatedDescription = false;
 
     @Override
     protected void setupActivityComponent(AppComponent appComponent) {
@@ -134,6 +142,7 @@ public class RepositoryActivity extends PagerActivity<RepositoryPresenter>
         toolbar.setTitleTextAppearance(getActivity(), R.style.Toolbar_TitleText);
         toolbar.setSubtitleTextAppearance(getActivity(), R.style.Toolbar_Subtitle);
         setToolbarBackEnable();
+        translateDescBn.setOnClickListener(v -> toggleDescriptionTranslation());
         setToolbarTitle(mPresenter.getRepoName());
     }
 
@@ -194,10 +203,61 @@ public class RepositoryActivity extends PagerActivity<RepositoryPresenter>
         mPresenter.starRepo(star);
     }
 
+    private void toggleDescriptionTranslation() {
+        if (showingTranslatedDescription) {
+            showingTranslatedDescription = false;
+            desc.setText(originalDescription);
+            translateDescBn.setToastText(getString(R.string.translate_description));
+            return;
+        }
+        if (translatedDescription != null) {
+            showingTranslatedDescription = true;
+            desc.setText(translatedDescription);
+            translateDescBn.setToastText(getString(R.string.show_original_description));
+            return;
+        }
+        if (detectedDescriptionLanguage == null) return;
+        translateDescBn.setEnabled(false);
+        translateDescBn.setAlpha(0.4f);
+        ReadmeTranslationHelper.translatePlainText(originalDescription, detectedDescriptionLanguage,
+                new ReadmeTranslationHelper.TranslateCallback() {
+                    @Override
+                    public void onTranslated(@NonNull String translated) {
+                        translateDescBn.setEnabled(true);
+                        translateDescBn.setAlpha(1f);
+                        translatedDescription = translated;
+                        showingTranslatedDescription = true;
+                        desc.setText(translatedDescription);
+                        translateDescBn.setToastText(getString(R.string.show_original_description));
+                    }
+
+                    @Override
+                    public void onError(@NonNull String message) {
+                        translateDescBn.setEnabled(true);
+                        translateDescBn.setAlpha(1f);
+                        showErrorToast(message);
+                    }
+                });
+    }
+
     @Override
     public void showRepo(Repository repo) {
 //        setToolbarTitle(repo.getFullName(), repo.getDefaultBranch());
-        desc.setText(repo.getDescription());
+        originalDescription = repo.getDescription();
+        translatedDescription = null;
+        detectedDescriptionLanguage = null;
+        showingTranslatedDescription = false;
+        desc.setText(originalDescription);
+        translateDescBn.setVisibility(View.GONE);
+        if (!StringUtils.isBlank(originalDescription)) {
+            ReadmeTranslationHelper.detectLanguage(originalDescription, sourceLanguageCode -> {
+                detectedDescriptionLanguage = sourceLanguageCode;
+                if (sourceLanguageCode != null) {
+                    translateDescBn.setVisibility(View.VISIBLE);
+                    translateDescBn.setToastText(getString(R.string.translate_description));
+                }
+            });
+        }
         String language = StringUtils.isBlank(repo.getLanguage()) ?
                 getString(R.string.unknown) : repo.getLanguage();
         info.setText(String.format(Locale.getDefault(), "Language %s, size %s",
