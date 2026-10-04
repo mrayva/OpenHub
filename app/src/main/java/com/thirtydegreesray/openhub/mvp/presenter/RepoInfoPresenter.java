@@ -11,6 +11,7 @@ import com.thirtydegreesray.openhub.http.error.HttpPageNoFoundError;
 import com.thirtydegreesray.openhub.mvp.contract.IRepoInfoContract;
 import com.thirtydegreesray.openhub.mvp.model.Repository;
 import com.thirtydegreesray.openhub.mvp.presenter.base.BasePagerPresenter;
+import com.thirtydegreesray.openhub.util.ReadmeTranslationHelper;
 import com.thirtydegreesray.openhub.util.StringUtils;
 
 import java.io.IOException;
@@ -31,6 +32,10 @@ public class RepoInfoPresenter extends BasePagerPresenter<IRepoInfoContract.View
     @AutoAccess Repository repository;
     @AutoAccess String curBranch = "";
     private String readmeSource;
+    private String readmeBaseUrl;
+    private String translatedReadmeSource;
+    private String detectedReadmeLanguage;
+    private boolean showingTranslatedReadme = false;
 
     @Inject
     public RepoInfoPresenter(DaoSession daoSession) {
@@ -79,7 +84,13 @@ public class RepoInfoPresenter extends BasePagerPresenter<IRepoInfoContract.View
             public void onSuccess(HttpResponse<ResponseBody> response) {
                 try {
                     readmeSource = response.body().string();
+                    readmeBaseUrl = baseUrl;
+                    translatedReadmeSource = null;
+                    detectedReadmeLanguage = null;
+                    showingTranslatedReadme = false;
+                    mView.hideTranslateButton();
                     mView.showReadMe(readmeSource, baseUrl);
+                    detectReadmeLanguage();
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -92,6 +103,53 @@ public class RepoInfoPresenter extends BasePagerPresenter<IRepoInfoContract.View
             }
         }, httpObserver, true);
 
+    }
+
+    private void detectReadmeLanguage() {
+        ReadmeTranslationHelper.detectLanguage(readmeSource, sourceLanguageCode -> {
+            if (mView == null) return;
+            detectedReadmeLanguage = sourceLanguageCode;
+            if (sourceLanguageCode != null) {
+                mView.showTranslateButton(false);
+            }
+        });
+    }
+
+    @Override
+    public void toggleReadmeTranslation() {
+        if (showingTranslatedReadme) {
+            showingTranslatedReadme = false;
+            mView.updateReadMe(readmeSource, readmeBaseUrl);
+            mView.showTranslateButton(false);
+            return;
+        }
+        if (translatedReadmeSource != null) {
+            showingTranslatedReadme = true;
+            mView.updateReadMe(translatedReadmeSource, readmeBaseUrl);
+            mView.showTranslateButton(true);
+            return;
+        }
+        if (detectedReadmeLanguage == null) return;
+        mView.setTranslateButtonBusy(true);
+        ReadmeTranslationHelper.translate(readmeSource, detectedReadmeLanguage,
+                new ReadmeTranslationHelper.TranslateCallback() {
+                    @Override
+                    public void onTranslated(String translatedHtml) {
+                        if (mView == null) return;
+                        mView.setTranslateButtonBusy(false);
+                        translatedReadmeSource = translatedHtml;
+                        showingTranslatedReadme = true;
+                        mView.updateReadMe(translatedReadmeSource, readmeBaseUrl);
+                        mView.showTranslateButton(true);
+                    }
+
+                    @Override
+                    public void onError(String message) {
+                        if (mView == null) return;
+                        mView.setTranslateButtonBusy(false);
+                        mView.showTranslateError(message);
+                    }
+                });
     }
 
     public Repository getRepository() {

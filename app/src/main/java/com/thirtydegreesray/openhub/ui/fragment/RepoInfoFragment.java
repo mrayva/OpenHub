@@ -30,6 +30,7 @@ import com.thirtydegreesray.openhub.ui.activity.RepoListActivity;
 import com.thirtydegreesray.openhub.ui.activity.RepositoryActivity;
 import com.thirtydegreesray.openhub.ui.activity.UserListActivity;
 import com.thirtydegreesray.openhub.ui.fragment.base.BaseFragment;
+import com.thirtydegreesray.openhub.ui.widget.ToastAbleImageButton;
 import com.thirtydegreesray.openhub.ui.widget.webview.CodeWebView;
 import com.thirtydegreesray.openhub.util.BundleHelper;
 import com.thirtydegreesray.openhub.util.StringUtils;
@@ -67,6 +68,7 @@ public class RepoInfoFragment extends BaseFragment<RepoInfoPresenter>
     @BindView(R2.id.readme_title) TextView readmeTitle;
     @BindView(R2.id.readme_loader) ProgressBar readmeLoader;
     @BindView(R2.id.web_view) CodeWebView webView;
+    @BindView(R2.id.translate_readme_bn) ToastAbleImageButton translateReadmeBn;
 
     private boolean isReadmeSetted = false;
 
@@ -161,17 +163,56 @@ public class RepoInfoFragment extends BaseFragment<RepoInfoPresenter>
     }
 
     @Override
+    public void updateReadMe(String source, String baseUrl) {
+        webView.setMdSource(source, baseUrl, true);
+        readmeLoader.setVisibility(View.VISIBLE);
+        readmeLoader.setIndeterminate(false);
+    }
+
+    @Override
     public void showReadMeLoader() {
         isReadmeSetted = false;
         readmeLoader.setVisibility(View.VISIBLE);
         readmeLoader.setIndeterminate(true);
         webView.setVisibility(View.GONE);
+        translateReadmeBn.setVisibility(View.GONE);
     }
 
     @Override
     public void showNoReadMe() {
         readmeTitle.setText(R.string.no_readme);
         readmeLoader.setVisibility(View.GONE);
+        translateReadmeBn.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void showTranslateButton(boolean showingTranslation) {
+        translateReadmeBn.setVisibility(View.VISIBLE);
+        translateReadmeBn.setEnabled(true);
+        translateReadmeBn.setAlpha(1f);
+        translateReadmeBn.setToastText(getString(showingTranslation
+                ? R.string.show_original_readme : R.string.translate_readme));
+    }
+
+    @Override
+    public void hideTranslateButton() {
+        translateReadmeBn.setVisibility(View.GONE);
+    }
+
+    @Override
+    public void setTranslateButtonBusy(boolean busy) {
+        translateReadmeBn.setEnabled(!busy);
+        translateReadmeBn.setAlpha(busy ? 0.4f : 1f);
+    }
+
+    @Override
+    public void showTranslateError(String message) {
+        showErrorToast(message);
+    }
+
+    @OnClick(R2.id.translate_readme_bn)
+    public void onTranslateReadmeClicked() {
+        mPresenter.toggleReadmeTranslation();
     }
 
     @OnClick({R2.id.issues_lay, R2.id.stargazers_lay, R2.id.froks_lay, R2.id.watchers_lay,

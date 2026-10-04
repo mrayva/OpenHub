@@ -185,11 +185,25 @@
                     android:id="@+id/readme_title"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_toStartOf="@+id/translate_readme_bn"
                     android:textColor="?android:colorAccent"
                     android:text="@string/readme"
                     android:textSize="@dimen/text_large"
                     android:layout_marginBottom="@dimen/spacing_mini"
                     android:layout_marginStart="@dimen/spacing_normal"/>
+                <com.thirtydegreesray.openhub.ui.widget.ToastAbleImageButton
+                    android:id="@+id/translate_readme_bn"
+                    android:layout_width="32dp"
+                    android:layout_height="32dp"
+                    android:layout_alignTop="@+id/readme_title"
+                    android:layout_alignParentEnd="true"
+                    android:layout_marginEnd="@dimen/spacing_normal"
+                    android:visibility="gone"
+                    android:scaleType="center"
+                    app:srcCompat="@drawable/ic_language"
+                    android:tint="?colorAccent"
+                    app:toast_text="@string/translate_readme"
+                    android:background="?android:selectableItemBackgroundBorderless"/>
                 <com.thirtydegreesray.openhub.ui.widget.webview.CodeWebView
                     android:id="@+id/web_view"
                     android:layout_width="match_parent"

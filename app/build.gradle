@@ -184,4 +184,8 @@ dependencies {
     implementation "com.timehop.stickyheadersrecyclerview:library:${STICKY_HEAD_VERSION}"
 
     implementation "org.jsoup:jsoup:${JSOUP_VERSION}"
+
+    // On-device, free, no API key - README translation (ReadmeTranslationHelper).
+    implementation "com.google.mlkit:translate:${MLKIT_TRANSLATE_VERSION}"
+    implementation "com.google.mlkit:language-id:${MLKIT_LANGUAGE_ID_VERSION}"
 }

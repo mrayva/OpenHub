@@ -129,6 +129,10 @@
     <string name="watchers">Watchers</string>
     <string name="readme">README</string>
     <string name="no_readme">NO README</string>
+    <string name="translate_readme">Translate README</string>
+    <string name="show_original_readme">Show original README</string>
+    <string name="translate_failed">Translation failed</string>
+    <string name="translate_not_available">Translation not available for this language</string>
     <string name="warning_dialog_tile">Warning</string>
     <string name="cancel">Cancel</string>
     <string name="close">Close</string>
