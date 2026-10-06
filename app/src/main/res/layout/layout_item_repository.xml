@@ -47,6 +47,18 @@
                     android:maxLines="2"
                     android:ellipsize="end"/>
 
+                <androidx.appcompat.widget.AppCompatImageView
+                    android:id="@+id/iv_watching"
+                    android:layout_width="14dp"
+                    android:layout_height="14dp"
+                    android:layout_marginStart="@dimen/spacing_mini"
+                    android:layout_gravity="center_vertical"
+                    android:visibility="gone"
+                    android:contentDescription="@string/watching"
+                    app:srcCompat="@drawable/ic_watch"
+                    android:tint="?android:textColorSecondary"
+                    tools:visibility="visible"/>
+
                 <TextView
                     android:id="@+id/tv_language"
                     android:layout_width="wrap_content"

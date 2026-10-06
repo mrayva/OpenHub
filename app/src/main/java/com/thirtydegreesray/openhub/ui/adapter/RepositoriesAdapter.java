@@ -25,6 +25,7 @@ import com.thirtydegreesray.openhub.util.LanguageColorsHelper;
 import com.thirtydegreesray.openhub.util.PrefUtils;
 import com.thirtydegreesray.openhub.util.StringUtils;
 import com.thirtydegreesray.openhub.util.ViewUtils;
+import com.thirtydegreesray.openhub.util.WatchedRepoHelper;
 
 import javax.inject.Inject;
 
@@ -48,6 +49,7 @@ public class RepositoriesAdapter extends BaseAdapter<RepositoriesAdapter.ViewHol
     @Inject
     public RepositoriesAdapter(Context context, BaseFragment fragment){
         super(context, fragment);
+        WatchedRepoHelper.refreshIfNeeded();
     }
 
     public void setShowIgnoredState(boolean showIgnoredState) {
@@ -70,6 +72,7 @@ public class RepositoriesAdapter extends BaseAdapter<RepositoriesAdapter.ViewHol
 
         @BindView(R2.id.iv_user_avatar) ImageView ivUserAvatar;
         @BindView(R2.id.language_color) ImageView languageColor;
+        @BindView(R2.id.iv_watching) ImageView ivWatching;
         @BindView(R2.id.tv_repo_name) TextView tvRepoName;
         @BindView(R2.id.tv_language) TextView tvLanguage;
         @BindView(R2.id.tv_repo_description) TextView tvRepoDescription;
@@ -107,6 +110,8 @@ public class RepositoriesAdapter extends BaseAdapter<RepositoriesAdapter.ViewHol
         holder.tvStarNum.setText(String.valueOf(repository.getStargazersCount()));
         holder.tvForkNum.setText(String.valueOf(repository.getForksCount()));
         holder.tvOwnerName.setText(repository.getOwner().getLogin());
+        holder.ivWatching.setVisibility(
+                WatchedRepoHelper.isWatched(repository.getFullName()) ? View.VISIBLE : View.GONE);
 
         if(StringUtils.isBlank(repository.getLanguage())){
             holder.tvLanguage.setText("");

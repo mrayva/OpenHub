@@ -114,6 +114,7 @@
     <string name="watched">Watched</string>
     <string name="unwatch">Unwatch</string>
     <string name="unwatched">Unwatched</string>
+    <string name="watching">Watching</string>
     <string name="fork">Fork</string>
     <string name="fork_tag">Fork</string>
     <string name="forked">Forked</string>

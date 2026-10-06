@@ -23,6 +23,7 @@ import com.thirtydegreesray.openhub.mvp.presenter.base.BasePresenter;
 import com.thirtydegreesray.openhub.ui.activity.RepositoryActivity;
 import com.thirtydegreesray.openhub.util.StarWishesHelper;
 import com.thirtydegreesray.openhub.util.StringUtils;
+import com.thirtydegreesray.openhub.util.WatchedRepoHelper;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -237,6 +238,7 @@ public class RepositoryPresenter extends BasePresenter<IRepositoryContract.View>
         boolean originalWatched = watched;
         watched = watch;
         mView.invalidateOptionsMenu();
+        WatchedRepoHelper.setWatched(owner + "/" + repoName, watched);
         Observable<Response<ResponseBody>> observable = watched ?
                 getRepoService().watchRepo(owner, repoName) :
                 getRepoService().unwatchRepo(owner, repoName);
@@ -246,6 +248,7 @@ public class RepositoryPresenter extends BasePresenter<IRepositoryContract.View>
                 // Revert the local state on error
                 watched = originalWatched;
                 mView.invalidateOptionsMenu();
+                WatchedRepoHelper.setWatched(owner + "/" + repoName, watched);
                 mView.showErrorToast(getErrorTip(error));
             }
 
@@ -367,6 +370,7 @@ public class RepositoryPresenter extends BasePresenter<IRepositoryContract.View>
                     public void onChecked(boolean status) {
                         watched = status;
                         mView.invalidateOptionsMenu();
+                        WatchedRepoHelper.setWatched(owner + "/" + repoName, watched);
                     }
                 }
         );

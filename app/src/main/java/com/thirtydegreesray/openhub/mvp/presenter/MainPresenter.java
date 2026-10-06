@@ -12,6 +12,7 @@ import com.thirtydegreesray.openhub.mvp.contract.IMainContract;
 import com.thirtydegreesray.openhub.mvp.model.User;
 import com.thirtydegreesray.openhub.mvp.presenter.base.BasePresenter;
 import com.thirtydegreesray.openhub.util.PrefUtils;
+import com.thirtydegreesray.openhub.util.WatchedRepoHelper;
 
 import java.util.List;
 
@@ -71,6 +72,11 @@ public class MainPresenter extends BasePresenter<IMainContract.View>
         daoSession.getAuthUserDao().getDatabase().execSQL(selectSql);
         AppData.INSTANCE.setAuthUser(null);
         AppData.INSTANCE.setLoggedUser(null);
+        // restartApp() re-launches SplashActivity in this same process (no
+        // process kill), so static per-account caches must be cleared by
+        // hand or the new account would start out showing the old one's
+        // watched-repo badges.
+        WatchedRepoHelper.reset();
         mView.restartApp();
     }
 
@@ -79,6 +85,7 @@ public class MainPresenter extends BasePresenter<IMainContract.View>
         daoSession.getAuthUserDao().delete(AppData.INSTANCE.getAuthUser());
         AppData.INSTANCE.setAuthUser(null);
         AppData.INSTANCE.setLoggedUser(null);
+        WatchedRepoHelper.reset();
         mView.restartApp();
     }
 
