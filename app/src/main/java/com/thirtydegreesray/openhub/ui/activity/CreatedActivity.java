@@ -5,11 +5,15 @@ import android.content.Intent;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.core.util.Pair;
 import androidx.fragment.app.Fragment;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 
+import com.google.android.material.datepicker.CalendarConstraints;
+import com.google.android.material.datepicker.DateValidatorPointBackward;
+import com.google.android.material.datepicker.MaterialDatePicker;
 import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.inject.component.AppComponent;
 import com.thirtydegreesray.openhub.inject.component.DaggerActivityComponent;
@@ -41,6 +45,11 @@ import java.util.Locale;
  * layout/menu, same TrendingPresenter for the language list, same tab
  * structure/pager pattern) since that UI is generic and not actually
  * trending-specific.
+ *
+ * An 8th "Custom" tab (overflow menu: "Custom date range...") lets the user
+ * pick an arbitrary start/end date via MaterialDatePicker's range mode,
+ * building a "created:start..end" query the same way the fixed tabs build
+ * "created:>date" - see showCustomDateRangePicker()/buildBaseQuery().
  */
 public class CreatedActivity extends PagerActivity<TrendingPresenter>
         implements ITrendingContract.View {
@@ -59,11 +68,22 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
     private SearchModel yearlySearchModel;
     private SearchModel tenYearsSearchModel;
     private SearchModel maxSearchModel;
+    private SearchModel customSearchModel;
+    // Defaults to the last 30 days until the user picks their own range via
+    // showCustomDateRangePicker() - keeps the Custom tab non-empty out of the box.
+    private long customRangeStartMillis;
+    private long customRangeEndMillis;
 
     @Override
     protected void initActivity() {
         super.initActivity();
         setEndDrawerEnable(true);
+        Calendar defaultEnd = Calendar.getInstance();
+        customRangeEndMillis = defaultEnd.getTimeInMillis();
+        Calendar defaultStart = Calendar.getInstance();
+        defaultStart.add(Calendar.DAY_OF_YEAR, -30);
+        customRangeStartMillis = defaultStart.getTimeInMillis();
+
         dailySearchModel = newSearchModel(TrendingSince.Daily);
         weeklySearchModel = newSearchModel(TrendingSince.Weekly);
         monthlySearchModel = newSearchModel(TrendingSince.Monthly);
@@ -71,6 +91,7 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
         yearlySearchModel = newSearchModel(TrendingSince.Yearly);
         tenYearsSearchModel = newSearchModel(TrendingSince.TenYears);
         maxSearchModel = newSearchModel(TrendingSince.Max);
+        customSearchModel = newSearchModel(TrendingSince.Custom);
     }
 
     private SearchModel newSearchModel(TrendingSince since) {
@@ -83,6 +104,14 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
         if (since == TrendingSince.Max) {
             // GitHub was founded in 2008 - treat this as "since the beginning".
             return "created:>2008-01-01";
+        }
+        if (since == TrendingSince.Custom) {
+            SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd", Locale.US);
+            Calendar start = Calendar.getInstance();
+            start.setTimeInMillis(customRangeStartMillis);
+            Calendar end = Calendar.getInstance();
+            end.setTimeInMillis(customRangeEndMillis);
+            return "created:" + format.format(start.getTime()) + ".." + format.format(end.getTime());
         }
         Calendar calendar = Calendar.getInstance();
         switch (since) {
@@ -140,6 +169,8 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
                 return tenYearsSearchModel;
             case Max:
                 return maxSearchModel;
+            case Custom:
+                return customSearchModel;
             case Yearly:
             default:
                 return yearlySearchModel;
@@ -175,7 +206,8 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
         setToolbarBackEnable();
         pagerAdapter.setPagerList(FragmentPagerModel.createCreatedPagerList(
                 getActivity(), getFragments(), dailySearchModel, weeklySearchModel,
-                monthlySearchModel, threeMonthsSearchModel, yearlySearchModel, tenYearsSearchModel, maxSearchModel));
+                monthlySearchModel, threeMonthsSearchModel, yearlySearchModel, tenYearsSearchModel, maxSearchModel,
+                customSearchModel));
         tabLayout.setVisibility(View.VISIBLE);
         tabLayout.setupWithViewPager(viewPager);
         viewPager.setAdapter(pagerAdapter);
@@ -190,7 +222,7 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
 
     @Override
     public int getPagerSize() {
-        return 7;
+        return 8;
     }
 
     @Override
@@ -217,6 +249,8 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
                 return 5;
             } else if (since.equals(TrendingSince.Max)) {
                 return 6;
+            } else if (since.equals(TrendingSince.Custom)) {
+                return 7;
             } else {
                 return -1;
             }
@@ -243,6 +277,11 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_trending, menu);
+        // menu_trending.xml is shared with TrendingActivity, which has no
+        // date-range concept (it mirrors GitHub's own scraped trending page) -
+        // added here in code instead of the shared XML so it's Created-only.
+        menu.add(Menu.NONE, R.id.action_custom_date_range, Menu.NONE, R.string.custom_date_range)
+                .setShowAsAction(MenuItem.SHOW_AS_ACTION_NEVER);
         return true;
     }
 
@@ -266,8 +305,61 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
         } else if (item.getItemId() == R.id.action_quick_export_ignore_list) {
             IgnoreListExportHelper.quickExport(getActivity());
             return true;
+        } else if (item.getItemId() == R.id.action_custom_date_range) {
+            showCustomDateRangePicker();
+            return true;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    /**
+     * MaterialDatePicker's built-in range mode - the only date-range input in
+     * the Material library, so no custom dialog/layout needed. Bounded to
+     * "today or earlier" since a future start/end can only ever return zero
+     * results from GitHub's search API.
+     */
+    private void showCustomDateRangePicker() {
+        CalendarConstraints constraints = new CalendarConstraints.Builder()
+                .setValidator(DateValidatorPointBackward.now())
+                .build();
+        MaterialDatePicker<Pair<Long, Long>> picker = MaterialDatePicker.Builder.dateRangePicker()
+                .setTitleText(R.string.pick_date_range)
+                .setCalendarConstraints(constraints)
+                .setSelection(new Pair<>(customRangeStartMillis, customRangeEndMillis))
+                .build();
+        picker.addOnPositiveButtonClickListener(selection -> {
+            customRangeStartMillis = selection.first;
+            customRangeEndMillis = selection.second;
+            notifyCustomRangeUpdate();
+            // Custom is always the last (8th) tab - see getPagerSize()/getFragmentPosition().
+            viewPager.setCurrentItem(7);
+        });
+        picker.show(getSupportFragmentManager(), "custom_date_range_picker");
+    }
+
+    /**
+     * Only the Custom tab's query changes when the user picks a new range -
+     * unlike notifyLanguageUpdate() (which affects every tab), refreshing all
+     * seven other tabs here would just be wasted network calls.
+     */
+    private void notifyCustomRangeUpdate() {
+        for (FragmentPagerModel fragmentPagerModel : pagerAdapter.getPagerList()) {
+            Fragment fragment = fragmentPagerModel.getFragment();
+            if (fragment instanceof RepositoriesFragment) {
+                Object obj = fragment.getArguments().get("since");
+                if (!TrendingSince.Custom.equals(obj)) continue;
+
+                String slug = selectedLanguage.getSlug();
+                boolean hasLanguage = slug != null && !slug.isEmpty()
+                        && !"unknown".equals(slug) && !"all".equals(slug);
+                String query = buildBaseQuery(TrendingSince.Custom);
+                if (hasLanguage) {
+                    query += " language:" + encodeLanguageSlug(slug);
+                }
+                customSearchModel.setQuery(query);
+                ((RepositoriesFragment) fragment).onSearchModelUpdate(customSearchModel);
+            }
+        }
     }
 
     private void notifyIgnoreListToggle() {

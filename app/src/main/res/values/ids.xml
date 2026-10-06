@@ -3,4 +3,5 @@
 
 <resources>
     <item name="position_tag" type="id"/>
+    <item name="action_custom_date_range" type="id"/>
 </resources>

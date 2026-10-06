@@ -242,6 +242,9 @@
     <string name="yearly">Yearly</string>
     <string name="ten_years">10 Years</string>
     <string name="all_time">All time</string>
+    <string name="custom_range">Custom</string>
+    <string name="custom_date_range">Custom date range…</string>
+    <string name="pick_date_range">Pick a date range</string>
 
     <string name="logout_warning">Confirm to logout?</string>
     <string name="unknown">Unknown</string>

@@ -133,7 +133,8 @@ public class FragmentPagerModel {
             @NonNull SearchModel dailySearchModel, @NonNull SearchModel weeklySearchModel,
             @NonNull SearchModel monthlySearchModel, @NonNull SearchModel threeMonthsSearchModel,
             @NonNull SearchModel yearlySearchModel,
-            @NonNull SearchModel tenYearsSearchModel, @NonNull SearchModel maxSearchModel) {
+            @NonNull SearchModel tenYearsSearchModel, @NonNull SearchModel maxSearchModel,
+            @NonNull SearchModel customSearchModel) {
         return setPagerFragmentFlag(Arrays.asList(
                 new FragmentPagerModel(context.getString(R.string.daily),
                         getFragment(fragments, 0, () -> RepositoriesFragment.createForSearch(dailySearchModel, TrendingSince.Daily))),
@@ -148,7 +149,9 @@ public class FragmentPagerModel {
                 new FragmentPagerModel(context.getString(R.string.ten_years),
                         getFragment(fragments, 5, () -> RepositoriesFragment.createForSearch(tenYearsSearchModel, TrendingSince.TenYears))),
                 new FragmentPagerModel(context.getString(R.string.all_time),
-                        getFragment(fragments, 6, () -> RepositoriesFragment.createForSearch(maxSearchModel, TrendingSince.Max)))
+                        getFragment(fragments, 6, () -> RepositoriesFragment.createForSearch(maxSearchModel, TrendingSince.Max))),
+                new FragmentPagerModel(context.getString(R.string.custom_range),
+                        getFragment(fragments, 7, () -> RepositoriesFragment.createForSearch(customSearchModel, TrendingSince.Custom)))
         ));
     }
 
