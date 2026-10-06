@@ -46,14 +46,36 @@ public class RepositoriesAdapter extends BaseAdapter<RepositoriesAdapter.ViewHol
     // Starred, etc.) leaves this false and is unaffected.
     private boolean showIgnoredState = false;
 
+    // WatchedRepoHelper's background fetch almost always finishes after this
+    // adapter has already bound its first visible rows - without this,
+    // those rows would keep showing no "watching" badge until some unrelated
+    // rebind (e.g. a scroll) happened to run onBindViewHolder again.
+    private final Runnable watchedReposListener = this::notifyDataSetChanged;
+
     @Inject
     public RepositoriesAdapter(Context context, BaseFragment fragment){
         super(context, fragment);
+        WatchedRepoHelper.addListener(watchedReposListener);
         WatchedRepoHelper.refreshIfNeeded();
     }
 
     public void setShowIgnoredState(boolean showIgnoredState) {
         this.showIgnoredState = showIgnoredState;
+    }
+
+    @Override
+    public void onAttachedToRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onAttachedToRecyclerView(recyclerView);
+        // Re-add on every attach (not just construction) - a ViewPager tab
+        // can detach/reattach the same adapter instance without recreating
+        // it, and removeListener() below would otherwise leave it orphaned.
+        WatchedRepoHelper.addListener(watchedReposListener);
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(@NonNull RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
+        WatchedRepoHelper.removeListener(watchedReposListener);
     }
 
     @Override

@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
-import rx.Observable;
+import rx.android.schedulers.AndroidSchedulers;
 import rx.schedulers.Schedulers;
 
 /**
@@ -36,8 +36,25 @@ public class WatchedRepoHelper {
     private static volatile boolean loaded = false;
     private static volatile boolean refreshing = false;
 
+    // RepositoriesAdapter rows bind synchronously, long before this
+    // background fetch can possibly finish - without a way to notify
+    // already-bound adapters, every row that was on screen before the fetch
+    // completed would keep showing no badge until its next unrelated rebind
+    // (e.g. a scroll). Adapters register here in their constructor and
+    // unregister in onDetachedFromRecyclerView(); listeners run on the main
+    // thread since they call notifyDataSetChanged().
+    private static final Set<Runnable> listeners = Collections.synchronizedSet(new HashSet<>());
+
     public static boolean isWatched(String fullName) {
         return fullName != null && watchedFullNames.contains(fullName);
+    }
+
+    public static void addListener(Runnable listener) {
+        listeners.add(listener);
+    }
+
+    public static void removeListener(Runnable listener) {
+        listeners.remove(listener);
     }
 
     /** Cheap to call from every repo-list screen - only fetches once per login session. */
@@ -60,6 +77,7 @@ public class WatchedRepoHelper {
     private static void fetchPage(RepoService repoService, int page, Set<String> accumulated) {
         repoService.getWatchedRepos(true, page)
                 .subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
                 .subscribe(response -> {
                     ArrayList<Repository> repos = response.isSuccessful() ? response.body() : null;
                     if (repos != null) {
@@ -74,11 +92,23 @@ public class WatchedRepoHelper {
                         watchedFullNames.addAll(accumulated);
                         loaded = true;
                         refreshing = false;
+                        notifyListeners();
                     }
                 }, error -> refreshing = false); // loaded stays as-is; next refreshIfNeeded() retries
     }
 
-    /** Optimistic local update from RepositoryActivity's own Watch/Unwatch toggle. */
+    private static void notifyListeners() {
+        for (Runnable listener : new HashSet<>(listeners)) {
+            listener.run();
+        }
+    }
+
+    /**
+     * Optimistic local update from RepositoryActivity's own Watch/Unwatch
+     * toggle (and its initial per-repo checkWatched() call). Notifies
+     * listeners too, in case a list showing this same repo is already bound
+     * and visible behind RepositoryActivity (e.g. after a back-stack pop).
+     */
     public static void setWatched(String fullName, boolean watched) {
         if (fullName == null) return;
         if (watched) {
@@ -86,6 +116,7 @@ public class WatchedRepoHelper {
         } else {
             watchedFullNames.remove(fullName);
         }
+        notifyListeners();
     }
 
     /** Called on logout/account switch (MainPresenter) - the cache is per-account. */
