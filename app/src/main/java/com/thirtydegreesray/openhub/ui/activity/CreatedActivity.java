@@ -69,8 +69,9 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
     private SearchModel tenYearsSearchModel;
     private SearchModel maxSearchModel;
     private SearchModel customSearchModel;
-    // Defaults to the last 30 days until the user picks their own range via
-    // showCustomDateRangePicker() - keeps the Custom tab non-empty out of the box.
+    // Persisted via PrefUtils so the picked range survives across app
+    // sessions - defaults to the last 30 days the first time it's ever
+    // opened, before the user has picked anything.
     private long customRangeStartMillis;
     private long customRangeEndMillis;
 
@@ -78,11 +79,18 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
     protected void initActivity() {
         super.initActivity();
         setEndDrawerEnable(true);
-        Calendar defaultEnd = Calendar.getInstance();
-        customRangeEndMillis = defaultEnd.getTimeInMillis();
-        Calendar defaultStart = Calendar.getInstance();
-        defaultStart.add(Calendar.DAY_OF_YEAR, -30);
-        customRangeStartMillis = defaultStart.getTimeInMillis();
+        long savedStart = PrefUtils.getCreatedCustomRangeStart();
+        long savedEnd = PrefUtils.getCreatedCustomRangeEnd();
+        if (savedStart > 0 && savedEnd > 0) {
+            customRangeStartMillis = savedStart;
+            customRangeEndMillis = savedEnd;
+        } else {
+            Calendar defaultEnd = Calendar.getInstance();
+            customRangeEndMillis = defaultEnd.getTimeInMillis();
+            Calendar defaultStart = Calendar.getInstance();
+            defaultStart.add(Calendar.DAY_OF_YEAR, -30);
+            customRangeStartMillis = defaultStart.getTimeInMillis();
+        }
 
         dailySearchModel = newSearchModel(TrendingSince.Daily);
         weeklySearchModel = newSearchModel(TrendingSince.Weekly);
@@ -330,6 +338,7 @@ public class CreatedActivity extends PagerActivity<TrendingPresenter>
         picker.addOnPositiveButtonClickListener(selection -> {
             customRangeStartMillis = selection.first;
             customRangeEndMillis = selection.second;
+            PrefUtils.setCreatedCustomRange(customRangeStartMillis, customRangeEndMillis);
             notifyCustomRangeUpdate();
             // Custom is always the last (8th) tab - see getPagerSize()/getFragmentPosition().
             viewPager.setCurrentItem(7);

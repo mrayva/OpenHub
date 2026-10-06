@@ -81,6 +81,10 @@ public class PrefUtils {
     public final static String TOPICS_SEARCH_SORT = "topicsSearchSort";
     public final static String DISABLE_LOADING_IMAGE = "disableLoadingImage";
 
+    /** CreatedActivity's Custom tab - last date range the user picked, in epoch millis. */
+    public final static String CREATED_CUSTOM_RANGE_START = "createdCustomRangeStart";
+    public final static String CREATED_CUSTOM_RANGE_END = "createdCustomRangeEnd";
+
 
     public final static String SEARCH_RECORDS = "searchRecords";
 
@@ -238,6 +242,20 @@ public class PrefUtils {
 
     public static boolean isDisableLoadingImage(){
         return getDefaultSp(AppApplication.get()).getBoolean(DISABLE_LOADING_IMAGE, false);
+    }
+
+    /** 0 means no range has been picked yet - caller falls back to its own default. */
+    public static long getCreatedCustomRangeStart(){
+        return getDefaultSp(AppApplication.get()).getLong(CREATED_CUSTOM_RANGE_START, 0);
+    }
+
+    public static long getCreatedCustomRangeEnd(){
+        return getDefaultSp(AppApplication.get()).getLong(CREATED_CUSTOM_RANGE_END, 0);
+    }
+
+    public static void setCreatedCustomRange(long startMillis, long endMillis){
+        set(CREATED_CUSTOM_RANGE_START, startMillis);
+        set(CREATED_CUSTOM_RANGE_END, endMillis);
     }
 
     public static boolean isLoadImageEnable(){
