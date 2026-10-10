@@ -352,6 +352,24 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
     // the chain again one page at a time, same as any other load-more.
     private static final int MAX_AUTO_CONTINUE_PAGES = 15;
 
+    // Reported live: Created's Monthly tab, language filter C++, "Apply
+    // ignore list" on - permanently "No repositories" with no way to
+    // recover (see ListFragment.onListDataUpdated() - itemCount==0 hides
+    // the SwipeRefreshLayout entirely, which was supposed to be the
+    // fallback this class's own comment above promises ("a later manual
+    // scroll/pull picks up the chain again"), but a literal zero-item list
+    // has nothing to scroll and no visible pull target). A heavy,
+    // specifically-targeted ignore list (e.g. against a spammy repo
+    // pattern that happens to dominate a narrow query's stars-sorted
+    // ordering) can plausibly filter out every one of the normal cap's 450
+    // raw results even though GitHub has plenty more to check - that's a
+    // materially stronger signal than "a partial page wasn't quite full"
+    // and deserves more runway before the fallback (now fixed in
+    // ListFragment too, but better to not need it) is the only way out.
+    // Still well inside GitHub's own 1000-result search pagination ceiling,
+    // and the existing 1-hop/second pacing already covers the added hops.
+    private static final int MAX_AUTO_CONTINUE_PAGES_WHEN_EMPTY = 32;
+
     // GitHub's search endpoint has a much tighter primary quota (10/min
     // unauthenticated, 30/min authenticated) than most REST endpoints, plus
     // a separate secondary "too many requests too quickly" abuse-detection
@@ -496,8 +514,10 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                             // the only source of truth.
                             boolean morePagesAvailable = rawCount == SEARCH_PAGE_SIZE;
                             mView.setCanLoadMore(morePagesAvailable);
+                            int effectiveMaxPages = repos.isEmpty()
+                                    ? MAX_AUTO_CONTINUE_PAGES_WHEN_EMPTY : MAX_AUTO_CONTINUE_PAGES;
                             if (repos.size() < SEARCH_PAGE_SIZE && morePagesAvailable
-                                    && autoContinueDepth < MAX_AUTO_CONTINUE_PAGES) {
+                                    && autoContinueDepth < effectiveMaxPages) {
                                 // Not just the empty case (every repo on this
                                 // page on the ignore list) - a heavily-ignored
                                 // list can also leave a SMALL but nonzero

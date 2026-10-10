@@ -133,7 +133,20 @@ public abstract class ListFragment <P extends IBaseContract.Presenter, A extends
     private void onListDataUpdated(){
         int itemCount = adapter.getItemCount();
         if (itemCount == 0) {
-            refreshLayout.setVisibility(View.GONE);
+            // canLoadMore can be true here even with zero items - e.g.
+            // RepositoriesPresenter's ignore-list auto-continue chain
+            // capping out with everything it found so far filtered away,
+            // while GitHub confirms more raw pages exist. Hiding
+            // refreshLayout unconditionally used to kill both recovery
+            // paths it promises callers ("a later manual scroll/pull picks
+            // up the chain again"): nothing to scroll with zero rows, and
+            // pull-to-refresh unreachable once its own view is gone -
+            // leaving a permanently empty list with no way out (confirmed
+            // live: Created's Monthly tab, C++ filter, ignore list on).
+            // Keeping it visible restores pull-to-refresh as the fallback;
+            // the RecyclerView itself still renders as blank since it has
+            // no rows, so the empty tip underneath still reads correctly.
+            refreshLayout.setVisibility(canLoadMore ? View.VISIBLE : View.GONE);
             layTip.setVisibility(View.VISIBLE);
             tvTip.setText(getEmptyTip());
             errorImage.setVisibility(View.GONE);
