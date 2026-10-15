@@ -457,14 +457,25 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     public void onError(@NonNull Throwable error) {
                         android.util.Log.d("SEARCH_DEBUG", "onError page=" + page + " depth=" + autoContinueDepth
                                 + " error=" + error.getClass().getSimpleName() + ":" + error.getMessage());
-                        if (isStale()) return;
+                        // showLoading() above runs unconditionally for every hop, including
+                        // ones a later reload/filter-change ends up superseding - hideLoading()
+                        // must be just as unconditional or a superseded hop's isLoading=true
+                        // never gets cleared, silently wedging ScrollListener's load-more guard
+                        // shut for this fragment forever (reported live: Created/Trending only,
+                        // scrolling up through already-loaded rows still fine, no visible error
+                        // or swipe involved - matches exactly, since nothing else here ever
+                        // resets isLoading once a stale hop leaves it stuck true).
                         mView.hideLoading();
+                        if (isStale()) return;
                         handleError(error);
                     }
 
                     @Override
                     public void onSuccess(@NonNull HttpResponse<SearchResult<Repository>> response) {
-                        if (isStale()) return;
+                        if (isStale()) {
+                            mView.hideLoading();
+                            return;
+                        }
                         ArrayList<Repository> items = response.body().getItems();
                         int rawCount = items.size();
                         if (ignoreListEligible && PrefUtils.isIgnoreListApplied()) {
