@@ -24,6 +24,10 @@ public class ReleaseInfoPresenter extends BasePresenter<IReleaseInfoContract.Vie
     @AutoAccess String repoName;
     @AutoAccess String tagName;
     @AutoAccess Release release;
+    // Set instead of tagName when opened from a release notification -
+    // NotificationsFragment only has the numeric release id from the
+    // notification subject's API URL (.../releases/{id}), not its tag name.
+    @AutoAccess long releaseId;
 
     @Inject
     public ReleaseInfoPresenter(DaoSession daoSession) {
@@ -59,7 +63,9 @@ public class ReleaseInfoPresenter extends BasePresenter<IReleaseInfoContract.Vie
         generalRxHttpExecute(new IObservableCreator<Release>() {
             @Override
             public Observable<Response<Release>> createObservable(boolean forceNetWork) {
-                return getRepoService().getReleaseByTagName(forceNetWork, owner, repoName, tagName);
+                return releaseId != 0
+                        ? getRepoService().getReleaseById(forceNetWork, owner, repoName, releaseId)
+                        : getRepoService().getReleaseByTagName(forceNetWork, owner, repoName, tagName);
             }
         }, httpObserver, true);
     }

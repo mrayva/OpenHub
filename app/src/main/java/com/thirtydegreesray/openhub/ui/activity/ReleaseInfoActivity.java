@@ -57,6 +57,19 @@ public class ReleaseInfoActivity extends BaseActivity<ReleaseInfoPresenter>
         activity.startActivity(intent);
     }
 
+    /**
+     * From a release notification, which only carries the release's numeric
+     * id (the notification subject's API URL is .../releases/{id}), not its
+     * tag name.
+     */
+    public static void show(Activity activity, @NonNull String owner,
+                            @NonNull String repoName, long releaseId) {
+        Intent intent = new Intent(activity, ReleaseInfoActivity.class);
+        intent.putExtras(BundleHelper.builder().put("releaseId", releaseId)
+                .put("owner", owner).put("repoName", repoName).build());
+        activity.startActivity(intent);
+    }
+
     public static Intent createIntent(Activity activity, @NonNull String owner, @NonNull String repoName,
                                       @NonNull String tagName) {
         return new Intent(activity, ReleaseInfoActivity.class)
@@ -75,6 +88,12 @@ public class ReleaseInfoActivity extends BaseActivity<ReleaseInfoPresenter>
 
     @Override
     public void showReleaseInfo(Release release) {
+        // When opened by releaseId (from a release notification) the tag
+        // name isn't known until this call - initView()'s setToolbarTitle()
+        // ran with a null title in that case. Harmless to repeat for the
+        // tagName/release-object entry points, where it's already correct.
+        setToolbarTitle(release.getTagName(),
+                mPresenter.getOwner().concat("/").concat(mPresenter.getRepoName()));
         downloadBn.setVisibility(View.VISIBLE);
         webView.setMdSource(StringUtils.isBlank(release.getBodyHtml()) ?
                 release.getBody() : release.getBodyHtml(), null);

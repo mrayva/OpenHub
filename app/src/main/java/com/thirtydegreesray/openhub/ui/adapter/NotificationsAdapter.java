@@ -118,6 +118,10 @@ public class NotificationsAdapter extends BaseAdapter<BaseViewHolder,
                 padding = 0;
             } else if(NotificationSubject.Type.Commit.equals(model.getSubject().getType())){
                 holder.typeIcon.setImageResource(R.drawable.ic_commit);
+            } else if(NotificationSubject.Type.Discussion.equals(model.getSubject().getType())){
+                holder.typeIcon.setImageResource(R.drawable.ic_comment);
+            } else if(NotificationSubject.Type.Release.equals(model.getSubject().getType())){
+                holder.typeIcon.setImageResource(R.drawable.ic_tag);
             } else {
                 holder.typeIcon.setImageResource(R.drawable.ic_pull);
             }

@@ -20,7 +20,9 @@ import com.thirtydegreesray.openhub.mvp.model.NotificationSubject;
 import com.thirtydegreesray.openhub.mvp.model.Repository;
 import com.thirtydegreesray.openhub.mvp.presenter.NotificationsPresenter;
 import com.thirtydegreesray.openhub.ui.activity.CommitDetailActivity;
+import com.thirtydegreesray.openhub.ui.activity.DiscussionActivity;
 import com.thirtydegreesray.openhub.ui.activity.IssueDetailActivity;
+import com.thirtydegreesray.openhub.ui.activity.ReleaseInfoActivity;
 import com.thirtydegreesray.openhub.ui.activity.RepositoryActivity;
 import com.thirtydegreesray.openhub.ui.adapter.NotificationsAdapter;
 import com.thirtydegreesray.openhub.ui.adapter.base.DoubleTypesModel;
@@ -134,6 +136,15 @@ public class NotificationsFragment extends ListFragment<NotificationsPresenter, 
                     case PullRequest:
                         openPullRequestNotification(url);
                         break;
+                    case Discussion:
+                        openDiscussionNotification(url);
+                        break;
+                    case Release:
+                        openReleaseNotification(url);
+                        break;
+                    default:
+                        showOperationTip(R.string.notification_type_not_supported);
+                        break;
                 }
             }
 
@@ -187,6 +198,48 @@ public class NotificationsFragment extends ListFragment<NotificationsPresenter, 
             IssueDetailActivity.show(getActivity(), owner, repoName, issueNumber);
         } catch (Exception e) {
             showErrorToast(getString(R.string.pull_request_open_failed));
+        }
+    }
+
+    /**
+     * A discussion notification's subject URL is .../repos/{owner}/{repo}/
+     * discussions/{number} - DiscussionActivity already resolves a
+     * discussion from just owner/repo/number itself (via GraphQL), so this
+     * only needs to parse those three out, same approach as
+     * openPullRequestNotification() above.
+     */
+    private void openDiscussionNotification(String url) {
+        try {
+            String path = url.substring(url.indexOf("/repos/") + "/repos/".length());
+            String[] parts = path.split("/");
+            String owner = parts[0];
+            String repoName = parts[1];
+            int discussionNumber = Integer.parseInt(parts[3].replaceAll("[^0-9]", ""));
+            DiscussionActivity.show(getActivity(), owner, repoName, discussionNumber);
+        } catch (Exception e) {
+            showErrorToast(getString(R.string.discussion_open_failed));
+        }
+    }
+
+    /**
+     * A release notification's subject URL is .../repos/{owner}/{repo}/
+     * releases/{id} - the release's numeric database id, not its tag name,
+     * so unlike Issue/Commit above this can't go straight to
+     * ReleaseInfoActivity.show(activity, owner, repoName, tagName).
+     * ReleaseInfoActivity.show(activity, owner, repoName, releaseId) fetches
+     * the release by that id itself (ReleaseInfoPresenter) and fills in the
+     * tag name once it loads.
+     */
+    private void openReleaseNotification(String url) {
+        try {
+            String path = url.substring(url.indexOf("/repos/") + "/repos/".length());
+            String[] parts = path.split("/");
+            String owner = parts[0];
+            String repoName = parts[1];
+            long releaseId = Long.parseLong(parts[3].replaceAll("[^0-9]", ""));
+            ReleaseInfoActivity.show(getActivity(), owner, repoName, releaseId);
+        } catch (Exception e) {
+            showErrorToast(getString(R.string.release_open_failed));
         }
     }
 

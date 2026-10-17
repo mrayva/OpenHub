@@ -227,4 +227,20 @@ public interface RepoService {
             @Path("tag") String tag
     );
 
+    /**
+     * A release notification's subject URL carries the release's numeric
+     * database id, not its tag name (.../releases/{id}, vs
+     * .../releases/tags/{tag} for the tag-lookup endpoint above) - needed to
+     * open ReleaseInfoActivity from NotificationsFragment, which only knows
+     * how to load a release by owner/repo/tagName or a full Release object.
+     */
+    @NonNull @GET("repos/{owner}/{repo}/releases/{id}")
+    @Headers("Accept: application/vnd.github.html")
+    Observable<Response<Release>> getReleaseById(
+            @Header("forceNetWork") boolean forceNetWork,
+            @Path("owner") String owner,
+            @Path("repo") String repo,
+            @Path("id") long id
+    );
+
 }
