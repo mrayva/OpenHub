@@ -236,6 +236,8 @@
 
     <string name="invalid_query">Invalid query text!</string>
 
+    <string name="notification_type_not_supported">This notification type isn\'t supported yet</string>
+
     <string name="daily">Daily</string>
     <string name="weekly">Weekly</string>
     <string name="monthly">Monthly</string>

@@ -16,6 +16,7 @@ import com.thirtydegreesray.openhub.inject.component.DaggerFragmentComponent;
 import com.thirtydegreesray.openhub.inject.module.FragmentModule;
 import com.thirtydegreesray.openhub.mvp.contract.INotificationsContract;
 import com.thirtydegreesray.openhub.mvp.model.Notification;
+import com.thirtydegreesray.openhub.mvp.model.NotificationSubject;
 import com.thirtydegreesray.openhub.mvp.model.Repository;
 import com.thirtydegreesray.openhub.mvp.presenter.NotificationsPresenter;
 import com.thirtydegreesray.openhub.ui.activity.CommitDetailActivity;
@@ -111,16 +112,29 @@ public class NotificationsFragment extends ListFragment<NotificationsPresenter, 
             RepositoryActivity.show(getActivity(), repository.getOwner().getLogin(), repository.getName());
         }else{
             String url = notification.getSubject().getUrl();
-            switch (notification.getSubject().getType()){
-                case Issue:
-                    IssueDetailActivity.show(getActivity(), url);
-                    break;
-                case Commit:
-                    CommitDetailActivity.show(getActivity(), url);
-                    break;
-                case PullRequest:
-                    openPullRequestNotification(url);
-                    break;
+            NotificationSubject.Type type = notification.getSubject().getType();
+            // type is null whenever GitHub sends a subject type this enum
+            // doesn't declare (e.g. Discussion, Release, CheckSuite - GitHub
+            // has added several since this enum was last extended) - Gson
+            // just leaves unrecognized enum values null rather than
+            // throwing, and switching on a null enum crashes immediately at
+            // the switch itself (compiles to a null.ordinal() call), before
+            // ever reaching a case, so this has to be checked up front
+            // rather than relying on a default: case.
+            if (type == null) {
+                showOperationTip(R.string.notification_type_not_supported);
+            } else {
+                switch (type) {
+                    case Issue:
+                        IssueDetailActivity.show(getActivity(), url);
+                        break;
+                    case Commit:
+                        CommitDetailActivity.show(getActivity(), url);
+                        break;
+                    case PullRequest:
+                        openPullRequestNotification(url);
+                        break;
+                }
             }
 
             if(notification.isUnread()){
