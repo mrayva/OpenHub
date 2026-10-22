@@ -25,12 +25,23 @@ public class RepositoriesFilter implements Parcelable {
     public final static RepositoriesFilter DEFAULT_STARRED_REPO
             = new RepositoriesFilter().setSort(Sort.Created).setSortDirection(SortDirection.Desc);
 
+    /** Matches Manage Ignore List's pre-existing hardcoded order (most recently ignored first). */
+    public final static RepositoriesFilter DEFAULT_IGNORED_REPO
+            = new RepositoriesFilter().setSort(Sort.IgnoredAt).setSortDirection(SortDirection.Desc);
+
     private enum Type{
         All, Owner, Public, Private, Member
     }
 
     private enum Sort{
-        Created, Updated, Pushed, Full_name
+        Created, Updated, Pushed, Full_name,
+        // Only ever selectable from menu_ignored_repos_filter.xml (Manage
+        // Ignore List's own end-drawer content, never Owned/Public's
+        // menu_repositories_filter.xml) - getSort()'s string form is sent
+        // as a literal query param to GitHub's list-repos REST API for
+        // Owned/Public, which has no stars/forks/ignored-date sort value,
+        // so these three must never be reachable from that drawer.
+        Stars, Forks, IgnoredAt
     }
 
     /**
@@ -77,9 +88,19 @@ public class RepositoriesFilter implements Parcelable {
 
     public static RepositoriesFilter generateFromDrawer(@NonNull NavigationView navView){
         RepositoriesFilter filter = new RepositoriesFilter();
-        MenuItem typeItem = ViewUtils.getSelectedMenu(navView.getMenu().findItem(R.id.nav_type_chooser));
-        if (typeItem != null){
-            filter.type = TYPE_RELATION.get(typeItem.getItemId());
+        // getSelectedMenu() dereferences its argument's getSubMenu() with no
+        // null check of its own - findItem() returns null outright for an id
+        // a given drawer's menu resource doesn't declare at all (not just
+        // hidden), which menu_ignored_repos_filter.xml doesn't for Type/Kind
+        // (Manage Ignore List has no equivalent concepts), so this has to be
+        // checked before calling it, same as the Language chooser below
+        // already does.
+        MenuItem typeChooserItem = navView.getMenu().findItem(R.id.nav_type_chooser);
+        if (typeChooserItem != null) {
+            MenuItem typeItem = ViewUtils.getSelectedMenu(typeChooserItem);
+            if (typeItem != null) {
+                filter.type = TYPE_RELATION.get(typeItem.getItemId());
+            }
         }
 
         MenuItem sortItem = ViewUtils.getSelectedMenu(navView.getMenu().findItem(R.id.nav_sort));
@@ -120,12 +141,41 @@ public class RepositoriesFilter implements Parcelable {
                     sort = Sort.Pushed;
                     sortDirection = SortDirection.Asc;
                     break;
+
+                // Manage Ignore List's own sort options (menu_ignored_repos_filter.xml) -
+                // see the Sort enum's comment for why these three are safe
+                // to add here despite not being valid GitHub API sort values.
+                case R.id.nav_most_stars:
+                    sort = Sort.Stars;
+                    sortDirection = SortDirection.Desc;
+                    break;
+                case R.id.nav_fewest_stars:
+                    sort = Sort.Stars;
+                    sortDirection = SortDirection.Asc;
+                    break;
+                case R.id.nav_most_forks:
+                    sort = Sort.Forks;
+                    sortDirection = SortDirection.Desc;
+                    break;
+                case R.id.nav_fewest_forks:
+                    sort = Sort.Forks;
+                    sortDirection = SortDirection.Asc;
+                    break;
+                case R.id.nav_recently_ignored:
+                    sort = Sort.IgnoredAt;
+                    sortDirection = SortDirection.Desc;
+                    break;
+                case R.id.nav_previously_ignored:
+                    sort = Sort.IgnoredAt;
+                    sortDirection = SortDirection.Asc;
+                    break;
             }
         }
         filter.sort = sort;
         filter.sortDirection = sortDirection;
 
-        MenuItem kindItem = ViewUtils.getSelectedMenu(navView.getMenu().findItem(R.id.nav_kind_chooser));
+        MenuItem kindChooserItem = navView.getMenu().findItem(R.id.nav_kind_chooser);
+        MenuItem kindItem = kindChooserItem == null ? null : ViewUtils.getSelectedMenu(kindChooserItem);
         filter.kind = kindItem != null && KIND_RELATION.containsKey(kindItem.getItemId())
                 ? KIND_RELATION.get(kindItem.getItemId()) : Kind.All;
 

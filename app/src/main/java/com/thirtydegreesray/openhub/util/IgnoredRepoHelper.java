@@ -77,6 +77,11 @@ public class IgnoredRepoHelper {
             ignoredRepo.setOwnerAvatarUrl(repository.getOwner().getAvatarUrl());
         }
         ignoredRepo.setIgnoredAt(new Date());
+        // null for Trending (scraped HTML has no such metadata) - handled
+        // the same as a missing stargazersCount/forksCount would be.
+        ignoredRepo.setCreatedAt(repository.getCreatedAt());
+        ignoredRepo.setUpdatedAt(repository.getUpdatedAt());
+        ignoredRepo.setPushedAt(repository.getPushedAt());
 
         final DaoSession daoSession = getDaoSession();
         daoSession.rxTx().run(() -> daoSession.getIgnoredRepoDao().insertOrReplace(ignoredRepo)).subscribe();

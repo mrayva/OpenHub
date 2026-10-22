@@ -226,6 +226,8 @@
     <string name="fewest_forks">Fewest forks</string>
     <string name="recently_updated">Recently updated</string>
     <string name="least_recently_updated">Least recently updated</string>
+    <string name="recently_ignored">Recently ignored</string>
+    <string name="previously_ignored">Previously ignored</string>
 
     <string name="most_followers">Most followers</string>
     <string name="fewest_followers">Fewest followers</string>

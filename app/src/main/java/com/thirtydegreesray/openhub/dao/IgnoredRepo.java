@@ -34,6 +34,14 @@ public class IgnoredRepo {
     private String ownerLogin;
     private String ownerAvatarUrl;
     private java.util.Date ignoredAt;
+    // Added for sort support in Manage Ignore List (stars/forks were already
+    // captured above; these three weren't, since nothing before needed them).
+    // Only populated going forward from when this field was added - existing
+    // rows from before this change have these as null until re-ignored, so
+    // they sort as if undated rather than backfilled from a re-fetch.
+    private java.util.Date createdAt;
+    private java.util.Date updatedAt;
+    private java.util.Date pushedAt;
 
     @Generated
     public IgnoredRepo() {
@@ -44,7 +52,7 @@ public class IgnoredRepo {
     }
 
     @Generated
-    public IgnoredRepo(String fullName, String name, String description, String language, Integer stargazersCount, Integer forksCount, String ownerLogin, String ownerAvatarUrl, java.util.Date ignoredAt) {
+    public IgnoredRepo(String fullName, String name, String description, String language, Integer stargazersCount, Integer forksCount, String ownerLogin, String ownerAvatarUrl, java.util.Date ignoredAt, java.util.Date createdAt, java.util.Date updatedAt, java.util.Date pushedAt) {
         this.fullName = fullName;
         this.name = name;
         this.description = description;
@@ -54,6 +62,9 @@ public class IgnoredRepo {
         this.ownerLogin = ownerLogin;
         this.ownerAvatarUrl = ownerAvatarUrl;
         this.ignoredAt = ignoredAt;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.pushedAt = pushedAt;
     }
 
     @NotNull
@@ -127,6 +138,30 @@ public class IgnoredRepo {
 
     public void setIgnoredAt(java.util.Date ignoredAt) {
         this.ignoredAt = ignoredAt;
+    }
+
+    public java.util.Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(java.util.Date createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public java.util.Date getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public void setUpdatedAt(java.util.Date updatedAt) {
+        this.updatedAt = updatedAt;
+    }
+
+    public java.util.Date getPushedAt() {
+        return pushedAt;
+    }
+
+    public void setPushedAt(java.util.Date pushedAt) {
+        this.pushedAt = pushedAt;
     }
 
 }

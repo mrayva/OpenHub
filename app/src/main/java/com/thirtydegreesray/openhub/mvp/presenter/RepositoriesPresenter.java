@@ -39,6 +39,8 @@ import com.thirtydegreesray.openhub.util.PrefUtils;
 import com.thirtydegreesray.openhub.util.StringUtils;
 
 import org.greenrobot.eventbus.Subscribe;
+import org.greenrobot.greendao.Property;
+import org.greenrobot.greendao.query.QueryBuilder;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -638,8 +640,13 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
 
     public RepositoriesFilter getFilter() {
         if (filter == null) {
-            filter = RepositoriesFragment.RepositoriesType.STARRED.equals(type) ?
-                    RepositoriesFilter.DEFAULT_STARRED_REPO : RepositoriesFilter.DEFAULT;
+            if (RepositoriesFragment.RepositoriesType.STARRED.equals(type)) {
+                filter = RepositoriesFilter.DEFAULT_STARRED_REPO;
+            } else if (RepositoriesFragment.RepositoriesType.IGNORED.equals(type)) {
+                filter = RepositoriesFilter.DEFAULT_IGNORED_REPO;
+            } else {
+                filter = RepositoriesFilter.DEFAULT;
+            }
         }
         return filter;
     }
@@ -723,9 +730,15 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
 
     private void loadIgnored(final int page) {
         mView.showLoading();
+        final RepositoriesFilter ignoredFilter = getFilter();
         Observable.fromCallable(() -> {
-            List<IgnoredRepo> ignoredRepos = daoSession.getIgnoredRepoDao().queryBuilder()
-                    .orderDesc(IgnoredRepoDao.Properties.IgnoredAt)
+            QueryBuilder<IgnoredRepo> qb =
+                    daoSession.getIgnoredRepoDao().queryBuilder();
+            if (!StringUtils.isBlank(ignoredFilter.getLanguageName())) {
+                qb.where(IgnoredRepoDao.Properties.Language.eq(ignoredFilter.getLanguageName()));
+            }
+            applyIgnoredSort(qb, ignoredFilter);
+            List<IgnoredRepo> ignoredRepos = qb
                     .offset((page - 1) * 30)
                     .limit(30)
                     .list();
@@ -749,6 +762,50 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
     }
 
     /**
+     * Sorted/filtered entirely client-side against the local IGNORED_REPO
+     * table (unlike Owned/Public, there's no remote API call here at all) -
+     * applying both the language where() clause above and this order-by
+     * BEFORE offset()/limit() keeps pagination correct, unlike Owned/Public's
+     * after-the-fetch filterByLanguage()/filterByKind(), which only works
+     * there because GitHub's own server-side pagination already determined
+     * canLoadMore before that client-side narrowing ever runs.
+     */
+    private void applyIgnoredSort(QueryBuilder<IgnoredRepo> qb,
+                                   RepositoriesFilter ignoredFilter) {
+        boolean asc = "asc".equals(ignoredFilter.getSortDirection());
+        Property property;
+        switch (ignoredFilter.getSort()) {
+            case "stars":
+                property = IgnoredRepoDao.Properties.StargazersCount;
+                break;
+            case "forks":
+                property = IgnoredRepoDao.Properties.ForksCount;
+                break;
+            case "full_name":
+                property = IgnoredRepoDao.Properties.FullName;
+                break;
+            case "created":
+                property = IgnoredRepoDao.Properties.CreatedAt;
+                break;
+            case "updated":
+                property = IgnoredRepoDao.Properties.UpdatedAt;
+                break;
+            case "pushed":
+                property = IgnoredRepoDao.Properties.PushedAt;
+                break;
+            case "ignoredat":
+            default:
+                property = IgnoredRepoDao.Properties.IgnoredAt;
+                break;
+        }
+        if (asc) {
+            qb.orderAsc(property);
+        } else {
+            qb.orderDesc(property);
+        }
+    }
+
+    /**
      * IgnoredRepo is self-contained (denormalized display fields, no
      * LocalRepo join) since it's keyed by fullName, not a numeric repo id -
      * see IgnoredRepo's class comment for why.
@@ -765,6 +822,9 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
         if (ignoredRepo.getForksCount() != null) {
             repository.setForksCount(ignoredRepo.getForksCount());
         }
+        repository.setCreatedAt(ignoredRepo.getCreatedAt());
+        repository.setUpdatedAt(ignoredRepo.getUpdatedAt());
+        repository.setPushedAt(ignoredRepo.getPushedAt());
         User owner = new User();
         owner.setLogin(ignoredRepo.getOwnerLogin());
         owner.setAvatarUrl(ignoredRepo.getOwnerAvatarUrl());

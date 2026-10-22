@@ -63,6 +63,13 @@ public class DBOpenHelper extends DaoMaster.DevOpenHelper {
             db.execSQL("CREATE INDEX IF NOT EXISTS IDX_TRACE_REPO_ID ON \"TRACE\" (\"REPO_ID\");");
         } else if(oldVersion == 7 && newVersion == 8){
             IgnoredRepoDao.createTable(db, true);
+        } else if(oldVersion == 8 && newVersion == 9){
+            // Manage Ignore List sorting needs created/updated/pushed dates,
+            // which IgnoredRepo never captured before - SQLite supports
+            // ALTER TABLE ADD COLUMN directly, no need to recreate the table.
+            db.execSQL("ALTER TABLE \"IGNORED_REPO\" ADD COLUMN \"CREATED_AT\" INTEGER;");
+            db.execSQL("ALTER TABLE \"IGNORED_REPO\" ADD COLUMN \"UPDATED_AT\" INTEGER;");
+            db.execSQL("ALTER TABLE \"IGNORED_REPO\" ADD COLUMN \"PUSHED_AT\" INTEGER;");
         } else {
             super.onUpgrade(db, oldVersion, newVersion);
         }

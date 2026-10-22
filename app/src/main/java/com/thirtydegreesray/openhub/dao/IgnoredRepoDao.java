@@ -31,6 +31,9 @@ public class IgnoredRepoDao extends AbstractDao<IgnoredRepo, String> {
         public final static Property OwnerLogin = new Property(6, String.class, "ownerLogin", false, "OWNER_LOGIN");
         public final static Property OwnerAvatarUrl = new Property(7, String.class, "ownerAvatarUrl", false, "OWNER_AVATAR_URL");
         public final static Property IgnoredAt = new Property(8, java.util.Date.class, "ignoredAt", false, "IGNORED_AT");
+        public final static Property CreatedAt = new Property(9, java.util.Date.class, "createdAt", false, "CREATED_AT");
+        public final static Property UpdatedAt = new Property(10, java.util.Date.class, "updatedAt", false, "UPDATED_AT");
+        public final static Property PushedAt = new Property(11, java.util.Date.class, "pushedAt", false, "PUSHED_AT");
     }
 
 
@@ -54,7 +57,10 @@ public class IgnoredRepoDao extends AbstractDao<IgnoredRepo, String> {
                 "\"FORKS_COUNT\" INTEGER," + // 5: forksCount
                 "\"OWNER_LOGIN\" TEXT," + // 6: ownerLogin
                 "\"OWNER_AVATAR_URL\" TEXT," + // 7: ownerAvatarUrl
-                "\"IGNORED_AT\" INTEGER);"); // 8: ignoredAt
+                "\"IGNORED_AT\" INTEGER," + // 8: ignoredAt
+                "\"CREATED_AT\" INTEGER," + // 9: createdAt
+                "\"UPDATED_AT\" INTEGER," + // 10: updatedAt
+                "\"PUSHED_AT\" INTEGER);"); // 11: pushedAt
     }
 
     /** Drops the underlying database table. */
@@ -107,6 +113,21 @@ public class IgnoredRepoDao extends AbstractDao<IgnoredRepo, String> {
         if (ignoredAt != null) {
             stmt.bindLong(9, ignoredAt.getTime());
         }
+
+        java.util.Date createdAt = entity.getCreatedAt();
+        if (createdAt != null) {
+            stmt.bindLong(10, createdAt.getTime());
+        }
+
+        java.util.Date updatedAt = entity.getUpdatedAt();
+        if (updatedAt != null) {
+            stmt.bindLong(11, updatedAt.getTime());
+        }
+
+        java.util.Date pushedAt = entity.getPushedAt();
+        if (pushedAt != null) {
+            stmt.bindLong(12, pushedAt.getTime());
+        }
     }
 
     @Override
@@ -153,6 +174,21 @@ public class IgnoredRepoDao extends AbstractDao<IgnoredRepo, String> {
         if (ignoredAt != null) {
             stmt.bindLong(9, ignoredAt.getTime());
         }
+
+        java.util.Date createdAt = entity.getCreatedAt();
+        if (createdAt != null) {
+            stmt.bindLong(10, createdAt.getTime());
+        }
+
+        java.util.Date updatedAt = entity.getUpdatedAt();
+        if (updatedAt != null) {
+            stmt.bindLong(11, updatedAt.getTime());
+        }
+
+        java.util.Date pushedAt = entity.getPushedAt();
+        if (pushedAt != null) {
+            stmt.bindLong(12, pushedAt.getTime());
+        }
     }
 
     @Override
@@ -171,7 +207,10 @@ public class IgnoredRepoDao extends AbstractDao<IgnoredRepo, String> {
             cursor.isNull(offset + 5) ? null : cursor.getInt(offset + 5), // forksCount
             cursor.isNull(offset + 6) ? null : cursor.getString(offset + 6), // ownerLogin
             cursor.isNull(offset + 7) ? null : cursor.getString(offset + 7), // ownerAvatarUrl
-            cursor.isNull(offset + 8) ? null : new java.util.Date(cursor.getLong(offset + 8)) // ignoredAt
+            cursor.isNull(offset + 8) ? null : new java.util.Date(cursor.getLong(offset + 8)), // ignoredAt
+            cursor.isNull(offset + 9) ? null : new java.util.Date(cursor.getLong(offset + 9)), // createdAt
+            cursor.isNull(offset + 10) ? null : new java.util.Date(cursor.getLong(offset + 10)), // updatedAt
+            cursor.isNull(offset + 11) ? null : new java.util.Date(cursor.getLong(offset + 11)) // pushedAt
         );
         return entity;
     }
@@ -187,6 +226,9 @@ public class IgnoredRepoDao extends AbstractDao<IgnoredRepo, String> {
         entity.setOwnerLogin(cursor.isNull(offset + 6) ? null : cursor.getString(offset + 6));
         entity.setOwnerAvatarUrl(cursor.isNull(offset + 7) ? null : cursor.getString(offset + 7));
         entity.setIgnoredAt(cursor.isNull(offset + 8) ? null : new java.util.Date(cursor.getLong(offset + 8)));
+        entity.setCreatedAt(cursor.isNull(offset + 9) ? null : new java.util.Date(cursor.getLong(offset + 9)));
+        entity.setUpdatedAt(cursor.isNull(offset + 10) ? null : new java.util.Date(cursor.getLong(offset + 10)));
+        entity.setPushedAt(cursor.isNull(offset + 11) ? null : new java.util.Date(cursor.getLong(offset + 11)));
      }
 
     @Override

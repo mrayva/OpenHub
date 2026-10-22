@@ -10,12 +10,17 @@ import android.view.MenuItem;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.thirtydegreesray.openhub.AppApplication;
 import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.dao.IgnoredRepo;
 import com.thirtydegreesray.openhub.mvp.contract.base.IBaseContract;
+import com.thirtydegreesray.openhub.mvp.model.TrendingLanguage;
 import com.thirtydegreesray.openhub.ui.activity.base.SingleFragmentActivity;
 import com.thirtydegreesray.openhub.ui.fragment.RepositoriesFragment;
+import com.thirtydegreesray.openhub.ui.fragment.base.OnDrawerSelectedListener;
 import com.thirtydegreesray.openhub.util.IgnoredRepoHelper;
+import com.thirtydegreesray.openhub.util.StringUtils;
+import com.thirtydegreesray.openhub.util.TrendingLanguageHelper;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -53,15 +58,76 @@ public class IgnoredReposActivity extends
         activity.startActivity(intent);
     }
 
+    private OnDrawerSelectedListener listener;
+
+    @Override
+    protected int getContentView() {
+        return R.layout.activity_single_fragment_with_drawer;
+    }
+
+    @Override
+    protected void initActivity() {
+        super.initActivity();
+        setEndDrawerEnable(true);
+    }
+
     @Override
     protected RepositoriesFragment createFragment() {
-        return RepositoriesFragment.createForIgnored();
+        RepositoriesFragment fragment = RepositoriesFragment.createForIgnored();
+        listener = fragment;
+        return fragment;
     }
 
     @Override
     protected void initView(Bundle savedInstanceState) {
         super.initView(savedInstanceState);
         setToolbarTitle(getString(R.string.manage_ignore_list));
+        initFilter();
+    }
+
+    @Override
+    protected void onNavItemSelected(@NonNull MenuItem item, boolean isStartDrawer) {
+        super.onNavItemSelected(item, isStartDrawer);
+        listener.onDrawerSelected(navViewEnd, item);
+    }
+
+    @Override
+    protected boolean isEndDrawerMultiSelect() {
+        // Sort and Language are independent groups, both open in the same
+        // drawer at once - same reasoning as Owned/Public's filter drawer
+        // (see RepoListActivity.isEndDrawerMultiSelect()).
+        return true;
+    }
+
+    @Override
+    protected int getEndDrawerToggleMenuItemId() {
+        return R.id.nav_sort;
+    }
+
+    private void initFilter() {
+        updateEndDrawerContent(R.menu.menu_ignored_repos_filter);
+        populateLanguageChooser();
+    }
+
+    /**
+     * Same approach as RepoListActivity.populateLanguageChooser() (Owned/
+     * Public's filter drawer) - the user's curated language list, matched
+     * directly against IgnoredRepo.getLanguage()'s display name since
+     * there's no search-API language: qualifier to build a slug for here,
+     * just a local DB column.
+     */
+    private void populateLanguageChooser() {
+        if (navViewEnd == null) return;
+        MenuItem languageChooserItem = navViewEnd.getMenu().findItem(R.id.nav_language_chooser);
+        if (languageChooserItem == null || languageChooserItem.getSubMenu() == null) return;
+        Menu subMenu = languageChooserItem.getSubMenu();
+        ArrayList<TrendingLanguage> languages = TrendingLanguageHelper.getLanguagesFromLocal(
+                AppApplication.get().getAppComponent().getDaoSession(), getActivity());
+        for (TrendingLanguage language : languages) {
+            String slug = language.getSlug();
+            if (StringUtils.isBlank(slug) || "unknown".equals(slug)) continue;
+            subMenu.add(R.id.group_language_chooser, language.getOrder(), language.getOrder(), language.getName());
+        }
     }
 
     @Override

@@ -1,6 +1,11 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
       xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
+        android:id="@+id/nav_sort"
+        android:title="@string/sort"
+        app:showAsAction="always"
+        android:icon="@drawable/ic_sort_title"/>
+    <item
         android:id="@+id/action_export"
         android:title="@string/export_ignore_list"
         app:showAsAction="never"/>
