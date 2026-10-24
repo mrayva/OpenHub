@@ -246,10 +246,17 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                 mView.hideLoading();
                 boolean kindFilterable = RepositoriesFragment.RepositoriesType.OWNED.equals(type)
                         || RepositoriesFragment.RepositoriesType.PUBLIC.equals(type);
+                // GitHub's user/subscriptions endpoint has no sort or
+                // language query param at all (see RepoService.getWatchedRepos()'s
+                // comment) - both are applied client-side here, same
+                // reasoning as kindFilterable above.
+                boolean watched = RepositoriesFragment.RepositoriesType.WATCHED.equals(type);
                 ArrayList<Repository> pageItems = response.body();
                 int rawCount = pageItems.size();
                 if (kindFilterable) {
                     pageItems = filterByKind(pageItems);
+                    pageItems = filterByLanguage(pageItems);
+                } else if (watched) {
                     pageItems = filterByLanguage(pageItems);
                 }
                 int appendedCount;
@@ -260,11 +267,23 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     appendedCount = pageItems.size();
                     repos.addAll(pageItems);
                 }
+                if (watched) {
+                    // Re-sorts the whole accumulated pool, not just this
+                    // page - there's no server-side order to preserve across
+                    // pages, so a load-more round can move earlier rows too,
+                    // same reasoning as searchMultiTopics()'s re-sort.
+                    sortWatchedRepos(repos, filter);
+                }
                 if (kindFilterable) {
                     // A full raw page can shrink to fewer (or zero) displayed
                     // rows after filtering - decide purely from the raw size.
                     mView.setCanLoadMore(rawCount == OWNED_PUBLIC_PAGE_SIZE);
                     mView.showRepositories(repos, appendedCount);
+                } else if (watched) {
+                    // Same raw-size reasoning as kindFilterable - GitHub's
+                    // user/subscriptions also defaults to a 30-item page.
+                    mView.setCanLoadMore(rawCount == OWNED_PUBLIC_PAGE_SIZE);
+                    mView.showRepositories(repos, 0);
                 } else if (rawCount == 0 && repos.size() != 0) {
                     mView.setCanLoadMore(false);
                 } else {
@@ -322,6 +341,51 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
             if (languageName.equals(repository.getLanguage())) filtered.add(repository);
         }
         return filtered;
+    }
+
+    /**
+     * General client-side sort for Watched repos - covers every sort value
+     * reachable from menu_watched_repos_filter.xml (full_name/created/
+     * updated/pushed/stars/forks), unlike sortRepos() below which only
+     * patches the couple of values the Search API itself gets wrong.
+     * GitHub's user/subscriptions endpoint has no sort param of its own at
+     * all (see RepoService.getWatchedRepos()'s comment), so every option
+     * here is derived straight from the same live fields RepositoriesAdapter
+     * already displays on each row.
+     */
+    private void sortWatchedRepos(ArrayList<Repository> list, RepositoriesFilter filter) {
+        final boolean desc = "desc".equals(filter.getSortDirection());
+        final String sort = filter.getSort();
+        Collections.sort(list, (a, b) -> {
+            int cmp;
+            switch (sort) {
+                case "created":
+                    cmp = compareDates(a.getCreatedAt(), b.getCreatedAt());
+                    break;
+                case "updated":
+                    cmp = compareDates(a.getUpdatedAt(), b.getUpdatedAt());
+                    break;
+                case "pushed":
+                    cmp = compareDates(a.getPushedAt(), b.getPushedAt());
+                    break;
+                case "stars":
+                    cmp = Integer.compare(a.getStargazersCount(), b.getStargazersCount());
+                    break;
+                case "forks":
+                    cmp = Integer.compare(a.getForksCount(), b.getForksCount());
+                    break;
+                default:
+                    cmp = StringUtils.isBlank(a.getFullName()) || StringUtils.isBlank(b.getFullName())
+                            ? 0 : a.getFullName().compareToIgnoreCase(b.getFullName());
+                    break;
+            }
+            return desc ? -cmp : cmp;
+        });
+    }
+
+    private static int compareDates(Date a, Date b) {
+        if (a == null || b == null) return 0;
+        return a.compareTo(b);
     }
 
     private Observable<Response<ArrayList<Repository>>> getObservable(boolean forceNetWork, int page) {

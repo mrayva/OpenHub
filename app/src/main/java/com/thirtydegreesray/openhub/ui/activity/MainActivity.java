@@ -21,6 +21,7 @@ import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.thirtydegreesray.dataautoaccess.annotation.AutoAccess;
+import com.thirtydegreesray.openhub.AppApplication;
 import com.thirtydegreesray.openhub.AppData;
 import com.thirtydegreesray.openhub.R;
 import com.thirtydegreesray.openhub.R2;
@@ -30,6 +31,7 @@ import com.thirtydegreesray.openhub.inject.component.AppComponent;
 import com.thirtydegreesray.openhub.inject.component.DaggerActivityComponent;
 import com.thirtydegreesray.openhub.inject.module.ActivityModule;
 import com.thirtydegreesray.openhub.mvp.contract.IMainContract;
+import com.thirtydegreesray.openhub.mvp.model.TrendingLanguage;
 import com.thirtydegreesray.openhub.mvp.model.User;
 import com.thirtydegreesray.openhub.mvp.model.filter.RepositoriesFilter;
 import com.thirtydegreesray.openhub.mvp.presenter.MainPresenter;
@@ -46,9 +48,11 @@ import com.thirtydegreesray.openhub.util.AppUtils;
 import com.thirtydegreesray.openhub.util.CrashHandler;
 import com.thirtydegreesray.openhub.util.PrefUtils;
 import com.thirtydegreesray.openhub.util.StringUtils;
+import com.thirtydegreesray.openhub.util.TrendingLanguageHelper;
 
 import java.io.File;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -221,7 +225,8 @@ public class MainActivity extends BaseDrawerActivity<MainPresenter>
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.menu_sort, menu);
         MenuItem menuItem = menu.findItem(R.id.nav_sort);
-        menuItem.setVisible(selectedPage == R.id.nav_owned || selectedPage == R.id.nav_starred);
+        menuItem.setVisible(selectedPage == R.id.nav_owned || selectedPage == R.id.nav_starred
+                || selectedPage == R.id.nav_watched);
         return true;
     }
 
@@ -309,10 +314,40 @@ public class MainActivity extends BaseDrawerActivity<MainPresenter>
         } else if (itemId == R.id.nav_starred) {
             updateEndDrawerContent(R.menu.menu_repositories_filter);
             RepositoriesFilter.initDrawer(navViewEnd, RepositoriesFragment.RepositoriesType.STARRED);
+        } else if (itemId == R.id.nav_watched) {
+            // Own dedicated drawer content rather than menu_repositories_filter
+            // + initDrawer() - Watched has no Type/Private/Public distinction
+            // and (unlike Owned/Public) is sorted entirely client-side, so it
+            // gets Stars/Forks sort options too (see RepositoriesFilter.Sort's
+            // comment on why those are otherwise restricted to Manage Ignore
+            // List's own drawer).
+            updateEndDrawerContent(R.menu.menu_watched_repos_filter);
+            populateLanguageChooser();
         } else {
             removeEndDrawer();
         }
         invalidateOptionsMenu();
+    }
+
+    /**
+     * Same approach as RepoListActivity/IgnoredReposActivity's own
+     * populateLanguageChooser() - the user's curated language list, matched
+     * directly against Repository.getLanguage()'s display name since
+     * Watched has no search-API language: qualifier to build a slug for
+     * here either.
+     */
+    private void populateLanguageChooser() {
+        if (navViewEnd == null) return;
+        MenuItem languageChooserItem = navViewEnd.getMenu().findItem(R.id.nav_language_chooser);
+        if (languageChooserItem == null || languageChooserItem.getSubMenu() == null) return;
+        Menu subMenu = languageChooserItem.getSubMenu();
+        ArrayList<TrendingLanguage> languages = TrendingLanguageHelper.getLanguagesFromLocal(
+                AppApplication.get().getAppComponent().getDaoSession(), getActivity());
+        for (TrendingLanguage language : languages) {
+            String slug = language.getSlug();
+            if (StringUtils.isBlank(slug) || "unknown".equals(slug)) continue;
+            subMenu.add(R.id.group_language_chooser, language.getOrder(), language.getOrder(), language.getName());
+        }
     }
 
     private void updateTitle(int itemId) {
@@ -423,7 +458,8 @@ public class MainActivity extends BaseDrawerActivity<MainPresenter>
     private void handlerEndDrawerClick(MenuItem item) {
         Fragment fragment = getVisibleFragment();
         if (fragment != null && fragment instanceof RepositoriesFragment
-                && (selectedPage == R.id.nav_owned || selectedPage == R.id.nav_starred)) {
+                && (selectedPage == R.id.nav_owned || selectedPage == R.id.nav_starred
+                        || selectedPage == R.id.nav_watched)) {
             ((RepositoriesFragment) fragment).onDrawerSelected(navViewEnd, item);
         }
     }
