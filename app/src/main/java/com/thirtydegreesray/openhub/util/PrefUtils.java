@@ -55,6 +55,8 @@ public class PrefUtils {
     public final static String CODE_WRAP = "codeWrap";
     public final static String CUSTOM_TABS_ENABLE = "customTabsEnable";
     public final static String IGNORE_LIST_APPLIED = "ignoreListApplied";
+    public final static String FILTER_NO_DESCRIPTION = "filterNoDescription";
+    public final static String FILTER_NON_ENGLISH = "filterNonEnglish";
     public final static String IGNORE_LIST_QUICK_EXPORT_URI = "ignoreListQuickExportUri";
     public final static String FONT_SCALE = "fontScale";
     public final static String CRASH_LOGGING_ENABLE = "crashLoggingEnable";
@@ -158,6 +160,21 @@ public class PrefUtils {
     /** Shared by both Trending and Created - toggling it in either applies to both. */
     public static boolean isIgnoreListApplied(){
         return getDefaultSp(AppApplication.get()).getBoolean(IGNORE_LIST_APPLIED, false);
+    }
+
+    /** Hide repos with no description. Shared by Trending, Created and My Topics. */
+    public static boolean isFilterNoDescription(){
+        return getDefaultSp(AppApplication.get()).getBoolean(FILTER_NO_DESCRIPTION, false);
+    }
+
+    /** Hide repos whose description isn't English or the system language. */
+    public static boolean isFilterNonEnglish(){
+        return getDefaultSp(AppApplication.get()).getBoolean(FILTER_NON_ENGLISH, false);
+    }
+
+    /** True when any of the three list filters is on. */
+    public static boolean isListFilterActive(){
+        return isIgnoreListApplied() || isFilterNoDescription() || isFilterNonEnglish();
     }
 
     public static boolean isDoubleClickTitleTipAble(){

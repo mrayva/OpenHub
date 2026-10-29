@@ -15,6 +15,18 @@
         app:showAsAction="never"/>
 
     <item
+        android:id="@+id/action_filter_no_description"
+        android:title="@string/filter_no_description"
+        android:checkable="true"
+        app:showAsAction="never"/>
+
+    <item
+        android:id="@+id/action_filter_non_english"
+        android:title="@string/filter_non_english"
+        android:checkable="true"
+        app:showAsAction="never"/>
+
+    <item
         android:id="@+id/action_manage_ignore_list"
         android:title="@string/manage_ignore_list"
         app:showAsAction="never"/>

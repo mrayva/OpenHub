@@ -36,6 +36,7 @@ import com.thirtydegreesray.openhub.mvp.presenter.base.BasePagerPresenter;
 import com.thirtydegreesray.openhub.ui.fragment.RepositoriesFragment;
 import com.thirtydegreesray.openhub.util.IgnoredRepoHelper;
 import com.thirtydegreesray.openhub.util.PrefUtils;
+import com.thirtydegreesray.openhub.util.RepoDescriptionFilter;
 import com.thirtydegreesray.openhub.util.StringUtils;
 
 import org.greenrobot.eventbus.Subscribe;
@@ -544,8 +545,8 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                         }
                         ArrayList<Repository> items = response.body().getItems();
                         int rawCount = items.size();
-                        if (ignoreListEligible && PrefUtils.isIgnoreListApplied()) {
-                            items = filterIgnored(items);
+                        if (ignoreListEligible && PrefUtils.isListFilterActive()) {
+                            items = filterList(items);
                         }
                         if (repos == null || page == 1) {
                             repos = new ArrayList<>();
@@ -898,14 +899,20 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
 
     /**
      * Applied to a freshly-fetched batch before it's merged into repos/shown
-     * - only called when ignoreListEligible && PrefUtils.isIgnoreListApplied().
+     * - only called when ignoreListEligible && PrefUtils.isListFilterActive().
+     * Each of the three filters (ignore list, no description, non-English
+     * description) is checked against its own pref.
      */
-    private ArrayList<Repository> filterIgnored(ArrayList<Repository> repositories) {
+    private ArrayList<Repository> filterList(ArrayList<Repository> repositories) {
+        final boolean ignore = PrefUtils.isIgnoreListApplied();
+        final boolean noDesc = PrefUtils.isFilterNoDescription();
+        final boolean nonEnglish = PrefUtils.isFilterNonEnglish();
         ArrayList<Repository> filtered = new ArrayList<>();
         for (Repository repository : repositories) {
-            if (!IgnoredRepoHelper.isIgnored(repository.getFullName())) {
-                filtered.add(repository);
-            }
+            if (ignore && IgnoredRepoHelper.isIgnored(repository.getFullName())) continue;
+            if (noDesc && !RepoDescriptionFilter.hasDescription(repository.getDescription())) continue;
+            if (nonEnglish && !RepoDescriptionFilter.isEnglishOrSystemLanguage(repository.getDescription())) continue;
+            filtered.add(repository);
         }
         return filtered;
     }
@@ -1040,8 +1047,8 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     multiTopicExhausted.add(page.topicSlug);
                 }
                 ArrayList<Repository> items = page.items;
-                if (ignoreListEligible && PrefUtils.isIgnoreListApplied()) {
-                    items = filterIgnored(items);
+                if (ignoreListEligible && PrefUtils.isListFilterActive()) {
+                    items = filterList(items);
                 }
                 for (Repository repository : items) {
                     if (multiTopicSeenIds.add(repository.getId())) {
@@ -1302,8 +1309,8 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                         repos = null;
                     }
 
-                    if (repos != null && ignoreListEligible && PrefUtils.isIgnoreListApplied()) {
-                        repos = filterIgnored(repos);
+                    if (repos != null && ignoreListEligible && PrefUtils.isListFilterActive()) {
+                        repos = filterList(repos);
                     }
                     return repos;
                 })
@@ -1369,8 +1376,8 @@ public class RepositoriesPresenter extends BasePagerPresenter<IRepositoriesContr
                     public void onSuccess(@NonNull HttpResponse<SearchResult<Repository>> response) {
                         mView.hideLoading();
                         ArrayList<Repository> items = response.body().getItems();
-                        if (ignoreListEligible && PrefUtils.isIgnoreListApplied()) {
-                            items = filterIgnored(items);
+                        if (ignoreListEligible && PrefUtils.isListFilterActive()) {
+                            items = filterList(items);
                         }
                         repos = items;
                         mView.showRepositories(repos, 0);

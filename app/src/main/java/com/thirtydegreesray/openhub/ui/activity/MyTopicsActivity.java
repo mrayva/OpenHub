@@ -192,6 +192,8 @@ public class MyTopicsActivity extends PagerActivity<MyTopicsPresenter>
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
         menu.findItem(R.id.action_apply_ignore_list).setChecked(PrefUtils.isIgnoreListApplied());
+        menu.findItem(R.id.action_filter_no_description).setChecked(PrefUtils.isFilterNoDescription());
+        menu.findItem(R.id.action_filter_non_english).setChecked(PrefUtils.isFilterNonEnglish());
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -218,6 +220,13 @@ public class MyTopicsActivity extends PagerActivity<MyTopicsPresenter>
             boolean applied = !item.isChecked();
             item.setChecked(applied);
             PrefUtils.set(PrefUtils.IGNORE_LIST_APPLIED, applied);
+            notifyIgnoreListToggle();
+            return true;
+        } else if (id == R.id.action_filter_no_description || id == R.id.action_filter_non_english) {
+            boolean applied = !item.isChecked();
+            item.setChecked(applied);
+            PrefUtils.set(id == R.id.action_filter_no_description
+                    ? PrefUtils.FILTER_NO_DESCRIPTION : PrefUtils.FILTER_NON_ENGLISH, applied);
             notifyIgnoreListToggle();
             return true;
         } else if (id == R.id.action_manage_ignore_list) {
